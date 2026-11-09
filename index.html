@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#176b4d">
+<meta name="description" content="FoodCheck – έλεγχος διατροφικών ετικετών">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<title>FoodCheck</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#18231e;background:#f3f6f4}
+*{box-sizing:border-box}body{margin:0}header{background:#176b4d;color:white;padding:22px 18px 18px}
+header h1{margin:0;font-size:1.7rem}header p{margin:5px 0 0;opacity:.9}
+main{max-width:720px;margin:auto;padding:16px}
+.panel{background:white;border-radius:16px;padding:17px;margin:0 0 14px;box-shadow:0 2px 12px #163d2b12}
+h2{font-size:1.08rem;margin:0 0 12px}.muted{color:#65736c;font-size:.9rem}
+label{display:block;font-weight:650;margin:10px 0 5px}
+input{width:100%;padding:13px;border:1px solid #cbd6cf;border-radius:10px;font:inherit;background:white}
+button{border:0;border-radius:11px;padding:13px 16px;font:inherit;font-weight:700;cursor:pointer}
+.primary{background:#176b4d;color:white}.secondary{background:#e7f1eb;color:#15583f}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.actions button{flex:1}
+.result{border-radius:13px;padding:14px;margin-top:14px}.green{background:#e4f5e9;border:1px solid #9bd1a9}.orange{background:#fff2d9;border:1px solid #eac879}.red{background:#fde8e6;border:1px solid #e7a29d}
+.result h3{margin:0 0 5px}.score{font-size:1.5rem;font-weight:800}
+table{width:100%;border-collapse:collapse;margin-top:10px}td{padding:7px 3px;border-bottom:1px solid #edf0ed}td:last-child{text-align:right;font-weight:650}
+ul{padding-left:20px;margin:8px 0}.history-item{padding:10px 0;border-bottom:1px solid #edf0ed}
+.smallbtn{padding:7px 10px;font-size:.85rem}.tag{display:inline-block;border-radius:99px;padding:3px 8px;font-size:.78rem;font-weight:700;background:#edf1ee}
+footer{max-width:720px;margin:auto;padding:0 18px 28px;color:#65736c;font-size:.82rem}
+#camera{width:100%;border-radius:12px;background:#111;display:none;margin-top:10px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<header><h1>🥗 FoodCheck</h1><p>Δες τι περιέχει το προϊόν πριν το επιλέξεις</p></header>
+<main>
+<section class="panel">
+<h2>1. Αναζήτηση προϊόντος</h2>
+<label for="barcode">Barcode προϊόντος</label>
+<input id="barcode" inputmode="numeric" placeholder="Σκάναρε ή πληκτρολόγησε τον αριθμό">
+<div class="actions">
+<button class="primary" id="scanBtn">📷 Σάρωση barcode</button>
+<button class="secondary" id="lookupBtn">Έλεγχος προϊόντος</button>
+</div>
+<video id="camera" playsinline></video>
+<p class="muted" id="scanNote">Η σάρωση λειτουργεί σε συμβατά προγράμματα περιήγησης. Μπορείς πάντα να πληκτρολογήσεις το barcode.</p>
+</section>
+<section class="panel">
+<h2>2. Εναλλακτικά: χειροκίνητη καταχώριση</h2>
+<label for="foodName">Ονομασία προϊόντος</label><input id="foodName" placeholder="π.χ. Ψωμί ολικής άλεσης">
+<label for="carbs">Υδατάνθρακες (g ανά 100 g)</label><input id="carbs" type="number" min="0" step="0.1" placeholder="π.χ. 42">
+<label for="sugars">εκ των οποίων σάκχαρα (g ανά 100 g)</label><input id="sugars" type="number" min="0" step="0.1" placeholder="π.χ. 4">
+<label for="fat">Λιπαρά (g ανά 100 g)</label><input id="fat" type="number" min="0" step="0.1" placeholder="π.χ. 8">
+<label for="sat">εκ των οποίων κορεσμένα (g ανά 100 g)</label><input id="sat" type="number" min="0" step="0.1" placeholder="π.χ. 2">
+<label for="fiber">Εδώδιμες ίνες (g ανά 100 g)</label><input id="fiber" type="number" min="0" step="0.1" placeholder="π.χ. 6">
+<label for="salt">Αλάτι (g ανά 100 g)</label><input id="salt" type="number" min="0" step="0.01" placeholder="π.χ. 0.8">
+<label for="portion">Ποσότητα που θα καταναλώσεις (g)</label><input id="portion" type="number" min="1" step="1" value="50">
+<button class="primary" style="width:100%;margin-top:14px" id="manualBtn">Αξιολόγηση προϊόντος</button>
+<div id="output" aria-live="polite"></div>
+</section>
+<section class="panel">
+<h2>Ιστορικό ελέγχων</h2>
+<div id="history" class="muted">Δεν υπάρχουν ακόμη καταχωρίσεις.</div>
+<div class="actions"><button class="secondary" id="clearBtn">Καθαρισμός ιστορικού</button></div>
+</section>
+<section class="panel">
+<h2>Αγαπημένα</h2><div id="favorites" class="muted">Δεν υπάρχουν αγαπημένα.</div>
+</section>
+</main>
+<footer>Οι αξιολογήσεις είναι ενδεικτικό εργαλείο ανάγνωσης ετικετών και όχι ιατρική οδηγία. Δεν υπολογίζουν δόση ινσουλίνης ή φαρμάκων. Η γλυκαιμική απόκριση εξαρτάται και από τη μερίδα, το γεύμα και τον οργανισμό. Τα δεδομένα barcode προέρχονται από το Open Food Facts και μπορεί να είναι ελλιπή ή λανθασμένα.</footer>
+<script src="./app.js"></script>
+</body></html>
