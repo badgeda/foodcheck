@@ -3,69 +3,141 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#176b4d">
-<meta name="description" content="FoodCheck – έλεγχος διατροφικών ετικετών">
+<meta name="theme-color" content="#244B3A">
+<meta name="description" content="FoodCheck – προσωπική αξιολόγηση τροφίμων και γευμάτων">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <title>FoodCheck</title>
 <style>
-:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#18231e;background:#f3f6f4}
-*{box-sizing:border-box}body{margin:0}header{background:#176b4d;color:white;padding:22px 18px 18px}
-header h1{margin:0;font-size:1.7rem}header p{margin:5px 0 0;opacity:.9}
-main{max-width:720px;margin:auto;padding:16px}
-.panel{background:white;border-radius:16px;padding:17px;margin:0 0 14px;box-shadow:0 2px 12px #163d2b12}
-h2{font-size:1.08rem;margin:0 0 12px}.muted{color:#65736c;font-size:.9rem}
-label{display:block;font-weight:650;margin:10px 0 5px}
-input{width:100%;padding:13px;border:1px solid #cbd6cf;border-radius:10px;font:inherit;background:white}
-button{border:0;border-radius:11px;padding:13px 16px;font:inherit;font-weight:700;cursor:pointer}
-.primary{background:#176b4d;color:white}.secondary{background:#e7f1eb;color:#15583f}
-.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.actions button{flex:1}
-.result{border-radius:13px;padding:14px;margin-top:14px}.green{background:#e4f5e9;border:1px solid #9bd1a9}.orange{background:#fff2d9;border:1px solid #eac879}.red{background:#fde8e6;border:1px solid #e7a29d}
-.result h3{margin:0 0 5px}.score{font-size:1.5rem;font-weight:800}
-table{width:100%;border-collapse:collapse;margin-top:10px}td{padding:7px 3px;border-bottom:1px solid #edf0ed}td:last-child{text-align:right;font-weight:650}
-ul{padding-left:20px;margin:8px 0}.history-item{padding:10px 0;border-bottom:1px solid #edf0ed}
-.smallbtn{padding:7px 10px;font-size:.85rem}.tag{display:inline-block;border-radius:99px;padding:3px 8px;font-size:.78rem;font-weight:700;background:#edf1ee}
-footer{max-width:720px;margin:auto;padding:0 18px 28px;color:#65736c;font-size:.82rem}
-#camera{width:100%;border-radius:12px;background:#111;display:none;margin-top:10px}
-.hidden{display:none!important}
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#18231e;background:#f2f6f2;--green:#244B3A;--red:#F3263A;--line:#dce6de}
+*{box-sizing:border-box}body{margin:0}header{background:var(--green);color:#fff;padding:16px;display:flex;align-items:center;gap:13px}
+.brand-logo{width:64px;height:64px;border-radius:12px;flex:0 0 auto}header h1{margin:0;font-size:1.7rem}header p{margin:5px 0 0;opacity:.94}
+main{max-width:850px;margin:auto;padding:14px}.panel{background:#fff;border-radius:15px;padding:16px;margin-bottom:13px;box-shadow:0 2px 10px #163d2b0d}
+h2{font-size:1.12rem;margin:0 0 12px}h3{font-size:1rem;margin:12px 0 8px}
+label{display:block;font-weight:650;margin:10px 0 5px}input,select,textarea{width:100%;padding:11px;border:1px solid #cbd6cf;border-radius:9px;font:inherit;background:#fff;color:inherit}
+input[type=checkbox],input[type=radio]{width:auto}input[type=file]{padding:8px}
+button{border:0;border-radius:10px;padding:11px 14px;font:inherit;font-weight:700;cursor:pointer}
+.primary{background:var(--green);color:#fff}.secondary{background:#e7f1e9;color:#15583f}.danger{background:#fbe8e8;color:#922}.tabs{display:flex;gap:7px;overflow:auto;margin:0 0 12px}.tabs button{white-space:nowrap;flex:1}.tabs button.active{background:#145d30;color:#fff}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.actions button{flex:1}
+.muted{color:#65736c;font-size:.88rem}.hidden{display:none!important}.result{border-radius:12px;padding:13px;margin-top:12px;border:1px solid var(--line);background:#f7faf7}.score{font-size:2rem;font-weight:850;line-height:1.1}.scoreline{display:flex;align-items:center;gap:14px}.meter{height:10px;background:#e7ece8;border-radius:99px;overflow:hidden;margin:8px 0}.meter span{display:block;height:100%;background:var(--green)}
+.risk-low{border-left:5px solid #258b45}.risk-mid{border-left:5px solid #e5a126}.risk-high{border-left:5px solid #d63b3b}
+.item{padding:10px 0;border-bottom:1px solid #edf0ed}.item:last-child{border:0}.pill{display:inline-block;border-radius:99px;padding:3px 8px;background:#edf3ee;font-size:.78rem;font-weight:700}
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}.photo-grid img{width:100%;height:100px;object-fit:cover;border-radius:8px}
+.small{font-size:.82rem;padding:7px 9px}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.food-picker{position:relative}.food-suggestions{position:absolute;z-index:20;top:100%;left:0;right:0;max-height:220px;overflow:auto;background:#fff;border:1px solid #cbd6cf;border-radius:9px;box-shadow:0 5px 16px #163d2b20;padding:5px}.food-suggestions button{display:block;width:100%;text-align:left;background:#fff;color:#18231e;border-radius:6px;padding:9px;font-weight:500}.food-suggestions button:hover,.food-suggestions button:focus{background:#e7f1e9}.food-empty{padding:9px;color:#65736c;font-size:.85rem}.meal-details{margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#f7faf7}.meal-details h3{margin-top:6px}.meal-details p{margin:6px 0}
+footer{max-width:850px;margin:auto;padding:0 16px 25px;color:#65736c;font-size:.8rem}
+@media(max-width:560px){.grid{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr 1fr}.panel{padding:13px}}
 </style>
 </head>
 <body>
-<header><h1>🥗 FoodCheck</h1><p>Δες τι περιέχει το προϊόν πριν το επιλέξεις</p></header>
+<header><img class="brand-logo" src="./icon-192.png" alt="Λογότυπο ΔΑ"><div><h1>FoodCheck</h1><p>Έλεγχος προϊόντων, γευμάτων και προσωπικού ημερολογίου</p></div></header>
 <main>
-<section class="panel">
-<h2>1. Αναζήτηση προϊόντος</h2>
-<label for="barcode">Barcode προϊόντος</label>
-<input id="barcode" inputmode="numeric" placeholder="Σκάναρε ή πληκτρολόγησε τον αριθμό">
-<div class="actions">
-<button class="primary" id="scanBtn">📷 Σάρωση barcode</button>
-<button class="secondary" id="lookupBtn">Έλεγχος προϊόντος</button>
+<nav class="tabs">
+<button class="secondary active" data-tab="product">Προϊόν</button>
+<button class="secondary" data-tab="meal">Γεύμα</button>
+<button class="secondary" data-tab="library">Γεύματα</button>
+<button class="secondary" data-tab="journal">Ημερολόγιο</button>
+<button class="secondary" data-tab="backup">Αντίγραφο ασφαλείας</button>
+</nav>
+
+<section id="tab-product">
+<div class="panel">
+<h2>Έλεγχος συσκευασμένου προϊόντος</h2>
+<label for="barcode">Barcode</label><input id="barcode" inputmode="numeric" placeholder="Πληκτρολόγησε barcode">
+<div class="actions"><button class="primary" id="lookupBtn">Αναζήτηση προϊόντος</button><button class="secondary" id="scanBtn">Σάρωση κάμερας</button></div>
+<div id="scanner" class="hidden" style="margin-top:10px"></div>
+<p class="muted">Η βάση Open Food Facts μπορεί να έχει ελλιπή ή λανθασμένα στοιχεία. Έλεγξε πάντα την ετικέτα.</p>
 </div>
-<video id="camera" playsinline></video>
-<p class="muted" id="scanNote">Η σάρωση λειτουργεί σε συμβατά προγράμματα περιήγησης. Μπορείς πάντα να πληκτρολογήσεις το barcode.</p>
+<div class="panel">
+<h2>Χειροκίνητη καταχώριση / διόρθωση στοιχείων</h2>
+<label for="pname">Ονομασία</label><input id="pname" placeholder="π.χ. ψωμί ολικής άλεσης">
+<div class="grid">
+<div><label for="carbs">Υδατάνθρακες (g/100g)</label><input id="carbs" type="number" min="0" step=".1"></div>
+<div><label for="sugars">Σάκχαρα (g/100g)</label><input id="sugars" type="number" min="0" step=".1"></div>
+<div><label for="fat">Λιπαρά (g/100g)</label><input id="fat" type="number" min="0" step=".1"></div>
+<div><label for="sat">Κορεσμένα (g/100g)</label><input id="sat" type="number" min="0" step=".1"></div>
+<div><label for="fiber">Ίνες (g/100g)</label><input id="fiber" type="number" min="0" step=".1"></div>
+<div><label for="salt">Αλάτι (g/100g)</label><input id="salt" type="number" min="0" step=".01"></div>
+<div><label for="protein">Πρωτεΐνη (g/100g)</label><input id="protein" type="number" min="0" step=".1"></div>
+<div><label for="portion">Μερίδα (g)</label><input id="portion" type="number" min="1" value="50"></div>
+</div>
+<div class="actions"><button class="primary" id="rateProduct">Αξιολόγηση</button><button class="secondary" id="saveFav">Αποθήκευση στα αγαπημένα</button></div>
+<div id="productResult" aria-live="polite"></div>
+</div>
+<div class="panel"><h2>Ιστορικό ελέγχων</h2><div id="productHistory" class="muted">Δεν υπάρχουν καταχωρίσεις.</div></div>
+<div class="panel"><h2>Αγαπημένα προϊόντα</h2><div id="productFavorites" class="muted">Δεν υπάρχουν αγαπημένα.</div></div>
 </section>
-<section class="panel">
-<h2>2. Εναλλακτικά: χειροκίνητη καταχώριση</h2>
-<label for="foodName">Ονομασία προϊόντος</label><input id="foodName" placeholder="π.χ. Ψωμί ολικής άλεσης">
-<label for="carbs">Υδατάνθρακες (g ανά 100 g)</label><input id="carbs" type="number" min="0" step="0.1" placeholder="π.χ. 42">
-<label for="sugars">εκ των οποίων σάκχαρα (g ανά 100 g)</label><input id="sugars" type="number" min="0" step="0.1" placeholder="π.χ. 4">
-<label for="fat">Λιπαρά (g ανά 100 g)</label><input id="fat" type="number" min="0" step="0.1" placeholder="π.χ. 8">
-<label for="sat">εκ των οποίων κορεσμένα (g ανά 100 g)</label><input id="sat" type="number" min="0" step="0.1" placeholder="π.χ. 2">
-<label for="fiber">Εδώδιμες ίνες (g ανά 100 g)</label><input id="fiber" type="number" min="0" step="0.1" placeholder="π.χ. 6">
-<label for="salt">Αλάτι (g ανά 100 g)</label><input id="salt" type="number" min="0" step="0.01" placeholder="π.χ. 0.8">
-<label for="portion">Ποσότητα που θα καταναλώσεις (g)</label><input id="portion" type="number" min="1" step="1" value="50">
-<button class="primary" style="width:100%;margin-top:14px" id="manualBtn">Αξιολόγηση προϊόντος</button>
-<div id="output" aria-live="polite"></div>
+
+<section id="tab-meal" class="hidden">
+<div class="panel">
+<h2>Καταγραφή γεύματος</h2>
+<label for="mealName">Όνομα γεύματος</label><input id="mealName" placeholder="π.χ. κοτόπουλο με πατάτες και σαλάτα">
+<h3>1. Σάκχαρο πριν από το γεύμα</h3>
+<div class="grid">
+<div><label for="preGlucose">Γλυκόζη (mg/dL)</label><input id="preGlucose" type="number" min="0" placeholder="π.χ. 125"></div>
+<div><label for="preTime">Ώρα μέτρησης</label><input id="preTime" type="time"></div>
+</div>
+<label for="trend">Τάση CGM (προαιρετικά)</label><select id="trend"><option value="">Δεν καταγράφηκε</option><option>Σταθερή</option><option>Ανοδική</option><option>Καθοδική</option><option>Ταχέως ανοδική</option><option>Ταχέως καθοδική</option></select>
+<h3>2. Τρόφιμα και συνοδευτικά</h3>
+<p class="muted">Επίλεξε κατηγορία και μετά διάλεξε από τη λίστα ένα αποθηκευμένο τρόφιμο ή γράψε νέο. Κάθε τρόφιμο αποθηκεύεται στη δική του κατηγορία και ανακαλεί τα διαθέσιμα διατροφικά στοιχεία του.</p>
+<div class="grid">
+<div><label for="foodItemType">Κατηγορία</label><select id="foodItemType"><option>Κυρίως πιάτο</option><option>Συνοδευτικό</option><option>Σαλάτα</option><option>Ψωμί</option><option>Τυρί</option><option>Πρόσθετα / σάλτσες</option><option>Γλυκό</option><option>Ποτό</option></select></div>
+<div><label for="foodItemName">Ονομασία τροφίμου</label><div class="food-picker"><input id="foodItemName" autocomplete="off" aria-autocomplete="list" aria-controls="foodSuggestions" placeholder="Επίλεξε αποθηκευμένο ή γράψε νέο τρόφιμο"><div id="foodSuggestions" class="food-suggestions hidden" role="listbox"></div></div><p class="muted">Πάτησε στο πεδίο για να δεις τα αποθηκευμένα τρόφιμα της κατηγορίας.</p></div>
+<div><label for="itemWeight">Βάρος / προγραμματισμένη ποσότητα (g)</label><input id="itemWeight" type="number" min="0" step="1" placeholder="π.χ. 150"></div>
+<div><label for="itemConsumedWeight">Ποσότητα που καταναλώθηκε (g)</label><input id="itemConsumedWeight" type="number" min="0" step="1" placeholder="συμπλήρωσε μετά το γεύμα"></div>
+<div><label for="itemVessel">Σκεύος σερβιρίσματος</label><select id="itemVessel"><option value="">Δεν καταγράφηκε</option><option>Ρηχό πιάτο</option><option>Βαθύ πιάτο</option><option>Μπολ</option><option>Ποτήρι</option><option>Φλιτζάνι</option><option>Πιατέλα</option><option>Άλλο</option></select></div>
+<div><label for="itemVesselDiameter">Διάμετρος σκεύους (cm)</label><input id="itemVesselDiameter" type="number" min="0" step="0.5" placeholder="π.χ. 22 · προαιρετικά"></div>
+<details class="wide"><summary>Διατροφικά στοιχεία ανά 100 g (προαιρετικά)</summary><div class="grid">
+<div><label for="itemCarbs">Υδατάνθρακες (g/100g)</label><input id="itemCarbs" type="number" min="0" step=".1"></div>
+<div><label for="itemSugars">Σάκχαρα (g/100g)</label><input id="itemSugars" type="number" min="0" step=".1"></div>
+<div><label for="itemSat">Κορεσμένα (g/100g)</label><input id="itemSat" type="number" min="0" step=".1"></div>
+<div><label for="itemFiber">Ίνες (g/100g)</label><input id="itemFiber" type="number" min="0" step=".1"></div>
+<div><label for="itemSalt">Αλάτι (g/100g)</label><input id="itemSalt" type="number" min="0" step=".01"></div>
+</div></details>
+</div>
+<div class="actions"><button class="secondary" id="addFood">Προσθήκη στο γεύμα</button></div>
+<div id="mealItems"></div>
+
+<label for="method">Τρόπος παρασκευής / λάδι / υλικά που δεν φαίνονται</label><textarea id="method" rows="2" placeholder="π.χ. 1 κουταλιά ελαιόλαδο, ψητό χωρίς πέτσα"></textarea>
+<h3>3. Ταχεία ινσουλίνη που πραγματικά χορηγήθηκε</h3>
+<div class="grid">
+<div><label for="rapidDose">Πραγματική δόση (μονάδες)</label><input id="rapidDose" type="number" min="0" step=".5"></div>
+<div><label for="rapidTime">Ώρα χορήγησης</label><input id="rapidTime" type="time"></div>
+</div>
+<p class="muted">Καταγράφεται μόνο η δόση που δηλώνεις ότι χορηγήθηκε. Το FoodCheck δεν υπολογίζει ούτε προτείνει δόση ινσουλίνης.</p>
+<div class="actions"><button class="primary" id="analyzeMeal">Αξιολόγηση και αποθήκευση γεύματος</button><button class="secondary" id="saveMealTemplate">Αποθήκευση στη βιβλιοθήκη</button><button class="secondary" id="newMeal">Νέα καταχώριση γεύματος</button></div>
+<div id="mealResult"></div>
+</div>
 </section>
-<section class="panel">
-<h2>Ιστορικό ελέγχων</h2>
-<div id="history" class="muted">Δεν υπάρχουν ακόμη καταχωρίσεις.</div>
-<div class="actions"><button class="secondary" id="clearBtn">Καθαρισμός ιστορικού</button></div>
+
+<section id="tab-library" class="hidden">
+<div class="panel"><h2>Προσωπική βιβλιοθήκη γευμάτων</h2><p class="muted">Αποθηκευμένα γεύματα για επανάληψη και σύγκριση. Οι φωτογραφίες και τα δεδομένα μένουν στη συσκευή σου.</p><div id="mealLibrary">Δεν υπάρχουν αποθηκευμένα γεύματα.</div></div>
 </section>
-<section class="panel">
-<h2>Αγαπημένα</h2><div id="favorites" class="muted">Δεν υπάρχουν αγαπημένα.</div>
+
+<section id="tab-journal" class="hidden">
+<div class="panel">
+<h2>Ημερολόγιο γευμάτων και γλυκόζης</h2>
+<p class="muted">Καταγράφονται οι πραγματικές μετρήσεις πριν και μετά το γεύμα, καθώς και η πραγματική ταχεία δόση που δήλωσες.</p>
+<div id="journalList">Δεν υπάρχουν καταγραφές.</div>
+<div class="panel"><h3>Σύγκριση επαναλαμβανόμενων γευμάτων</h3><p class="muted">Συγκρίνονται καταγραφές με ίδιο όνομα και μετρήσεις στο ίδιο χρονικό σημείο. Οι διαφορές σε ποσότητα και σύνθεση μπορεί να επηρεάζουν το αποτέλεσμα.</p><div id="mealComparisons">Δεν υπάρχουν ακόμη αρκετές επαναλαμβανόμενες καταγραφές.</div></div>
+</div>
+<div class="panel"><h2>Πραγματική ποσότητα που καταναλώθηκε</h2><p class="muted">Μπορείς να την καταχωρίσεις μετά το γεύμα, ξεχωριστά από την προγραμματισμένη ποσότητα.</p><label for="consumedEntry">Επιλογή γεύματος</label><select id="consumedEntry"></select><label for="consumedFood">Επιλογή τροφίμου</label><select id="consumedFood"></select><label for="actualConsumedWeight">Ποσότητα που καταναλώθηκε (g)</label><input id="actualConsumedWeight" type="number" min="0" step="1"><button class="primary" id="saveConsumed">Αποθήκευση πραγματικής ποσότητας</button><p id="consumedFeedback" class="muted"></p></div>
+<div class="panel">
+<h2>Μεταγευματική μέτρηση</h2>
+<label for="postEntry">Επιλογή καταγραφής γεύματος</label><select id="postEntry"></select>
+<div class="grid">
+<div><label for="postAfter">Χρόνος μετά το γεύμα</label><select id="postAfter"><option value="1">1 ώρα</option><option value="2">2 ώρες</option><option value="3">3 ώρες</option><option value="4">4 ώρες</option></select></div>
+<div><label for="postGlucose">Γλυκόζη (mg/dL)</label><input id="postGlucose" type="number" min="0"></div>
+</div>
+<label for="postTime">Ώρα μέτρησης</label><input id="postTime" type="time">
+<button class="primary" id="savePost">Αποθήκευση μέτρησης</button>
+<div id="postFeedback" class="muted"></div>
+</div>
 </section>
+<section id="tab-backup" class="hidden"><div class="panel"><h2>Αντίγραφο ασφαλείας</h2><p class="muted">Εξαγωγή και επαναφορά ιστορικού, αγαπημένων, βιβλιοθήκης, ημερολογίου και φωτογραφιών. Η επαναφορά αντικαθιστά τα υπάρχοντα δεδομένα αυτής της συσκευής. Φύλαξε πρώτα αντίγραφο.</p><div class="actions"><button class="primary" id="exportBackup">Εξαγωγή αντιγράφου</button><label class="secondary" for="importBackup" style="display:inline-block;padding:10px 14px;border-radius:8px;cursor:pointer">Επαναφορά αντιγράφου</label><input id="importBackup" type="file" accept="application/json,.json" hidden></div><p id="backupFeedback" class="muted"></p></div></section>
 </main>
-<footer>Οι αξιολογήσεις είναι ενδεικτικό εργαλείο ανάγνωσης ετικετών και όχι ιατρική οδηγία. Δεν υπολογίζουν δόση ινσουλίνης ή φαρμάκων. Η γλυκαιμική απόκριση εξαρτάται και από τη μερίδα, το γεύμα και τον οργανισμό. Τα δεδομένα barcode προέρχονται από το Open Food Facts και μπορεί να είναι ελλιπή ή λανθασμένα.</footer>
+<footer>Το FoodCheck είναι ενημερωτικό εργαλείο και όχι ιατρική συσκευή ή ιατρική οδηγία. Δεν διαγιγνώσκει, δεν προτείνει δόσεις ινσουλίνης και δεν αντικαθιστά τον γιατρό. Οι φωτογραφίες δεν προσδιορίζουν με ακρίβεια βάρος, λάδι ή κρυφά υλικά· οι εκτιμήσεις χρειάζονται επιβεβαίωση. Τα δεδομένα αποθηκεύονται τοπικά στη συσκευή και δεν συγχρονίζονται αυτόματα.</footer>
 <script src="./app.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </body></html>

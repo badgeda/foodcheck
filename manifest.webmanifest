@@ -1,11 +1,15 @@
 {
-  "name": "FoodCheck – Έλεγχος τροφίμων",
+  "name": "FoodCheck – Προσωπική αξιολόγηση τροφίμων",
   "short_name": "FoodCheck",
   "lang": "el",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f3f6f4",
-  "theme_color": "#176b4d",
-  "description": "Ελληνική εφαρμογή ανάγνωσης διατροφικών ετικετών"
+  "background_color": "#f2f6f2",
+  "theme_color": "#244B3A",
+  "description": "Έλεγχος προϊόντων, γευμάτων και προσωπικού ημερολογίου",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
 }
