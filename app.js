@@ -123,100 +123,57 @@ function assessMeal(p,portion=100){
  let portionCarbs=c==null?null:c*portion/100;
  return {score,level,confidence,notes,portionCarbs,known};
 }
+
 function resultHTML(p,portion,r){
  const scoreText=r.score==null?"Δεν υπολογίστηκε":r.score+"/100";
  const riskText=r.score==null?"Ανεπαρκή διατροφικά στοιχεία":r.score>=75?"Καλύτερη διατροφική εικόνα":r.score>=50?"Μέτρια διατροφική εικόνα – χρειάζεται προσοχή":"Χαμηλή διατροφική εικόνα – αυξημένη προσοχή";
  const subScore=v=>v==null?"Δεν αξιολογήθηκε":v+"/100";
+
+ const ingredients=(p.ingredients||"").trim();
+ const additives=Array.isArray(p.additives)?p.additives:[];
+ const allergens=Array.isArray(p.allergens)?p.allergens:[];
+
+ const cleanTags=arr=>arr.map(x=>
+  String(x).replace(/^[a-z]{2,3}:/i,"").toUpperCase()
+ );
+
  return `<div class="result ${r.level}">
  <div class="scoreline">
   <div class="score">${scoreText}</div>
   <div><b>${riskText}</b><br><span class="pill">Ποιότητα δεδομένων: ${r.confidence}</span></div>
  </div>
+
  ${r.score==null?"":`<div class="meter"><span style="width:${r.score}%"></span></div>`}
+
  <b>${esc(p.name||"Τρόφιμο")}</b>
+
  <h3>Διατροφικά στοιχεία ανά 100 g</h3>
  <p>Υδατάνθρακες: ${p.carbs??"—"} g · Σάκχαρα: ${p.sugars??"—"} g · Πρωτεΐνες: ${p.protein??"—"} g.</p>
  <p>Συνολικά λιπαρά: ${p.fat??"—"} g · Κορεσμένα: ${p.sat??"—"} g · Φυτικές ίνες: ${p.fiber??"—"} g · Αλάτι: ${p.salt??"—"} g.</p>
+
  <h3>Ατομική αξιολόγηση</h3>
  <p><b>Διαβήτης:</b> ${subScore(r.diabetesScore)}</p>
  <p><b>Τριγλυκερίδια / χοληστερόλη και αλάτι:</b> ${subScore(r.lipidScore)}</p>
  <p><b>Πρωτεΐνες:</b> ${subScore(r.proteinScore)}</p>
+
  <h3>Στη μερίδα των ${portion} g</h3>
  <p>Υδατάνθρακες: ${r.portionCarbs==null?"Δεν υπολογίζονται":r.portionCarbs.toFixed(1)+" g"} · Πρωτεΐνες: ${r.portionProtein==null?"Δεν υπολογίζονται":r.portionProtein.toFixed(1)+" g"}.</p>
+
  ${r.notes.length?"<b>Παρατηρήσεις</b><ul>"+r.notes.map(n=>"<li>"+esc(n)+"</li>").join("")+"</ul>":""}
+
+ <h3>Συστατικά προϊόντος</h3>
+ ${ingredients?`<p>${esc(ingredients)}</p>`:"<p class='muted'>Δεν υπάρχουν διαθέσιμα στοιχεία συστατικών.</p>"}
+
+ <h3>Πρόσθετα (Ε)</h3>
+ ${additives.length?"<p>"+cleanTags(additives).map(x=>esc(x)).join(", ")+"</p><p class='muted'>Η αναφορά ενός πρόσθετου δεν σημαίνει από μόνη της ότι είναι επικίνδυνο. Χρειάζεται αξιολόγηση του συγκεκριμένου πρόσθετου και της χρήσης του.</p>":"<p class='muted'>Δεν υπάρχουν καταχωρισμένα στοιχεία πρόσθετων.</p>"}
+
+ <h3>Αλλεργιογόνα</h3>
+ ${allergens.length?"<p>"+cleanTags(allergens).map(x=>esc(x)).join(", ")+"</p>":"<p class='muted'>Δεν υπάρχουν καταχωρισμένα στοιχεία αλλεργιογόνων.</p>"}
+
  <p class="muted">Η βαθμολογία είναι ενδεικτική, βασίζεται στα διαθέσιμα στοιχεία και δεν αποτελεί ιατρική αξιολόγηση.</p>
  </div>`;
 }
-function currentProduct(){return {name:$("pname").value.trim()||"Χειροκίνητο προϊόν",code:$("barcode").value.trim(),carbs:num("carbs"),sugars:num("sugars"),fat:num("fat"),sat:num("sat"),fiber:num("fiber"),salt:num("salt"),protein:num("protein")}}
-function showProduct(p,saveHistory=true){lastProduct=p;let portion=num("portion")||50,r=assess(p,portion);$("productResult").innerHTML=resultHTML(p,portion,r);if(saveHistory){history.unshift({name:p.name,portion,date:new Date().toLocaleString("el-GR"),product:p,score:r.score});history=history.slice(0,40);save();drawProductLists()}}
-$("rateProduct").onclick=()=>{let p=currentProduct();if(Object.values(p).filter(v=>typeof v==="number").length===0){alert("Συμπλήρωσε τουλάχιστον ένα διατροφικό στοιχείο.");return}showProduct(p)};
-$("saveFav").onclick=()=>{let p=lastProduct||currentProduct();if(!p.name){alert("Πρώτα αξιολόγησε ή συμπλήρωσε ένα προϊόν.");return}if(!favorites.some(x=>x.code===p.code&&x.name===p.name)){favorites.unshift(p);save();drawProductLists()}};
-function drawProductLists(){
- $("productHistory").innerHTML=history.length?history.map((h,i)=>`<div class="item"><b>${esc(h.name)}</b> <span class="pill">${esc(h.date||"")}</span><br><span class="muted">Μερίδα ${h.portion||"—"} g · Βαθμολογία ${h.score??"—"}/100</span> <button class="secondary small" data-h="${i}">Προβολή</button></div>`).join(""):"Δεν υπάρχουν καταχωρίσεις.";
- $("productHistory").querySelectorAll("[data-h]").forEach(b=>b.onclick=()=>{let p=history[+b.dataset.h].product;fillProduct(p);showProduct(p,false)});
- $("productFavorites").innerHTML=favorites.length?favorites.map((p,i)=>`<div class="item"><b>${esc(p.name)}</b> <button class="secondary small" data-f="${i}">Έλεγχος</button> <button class="danger small" data-r="${i}">Αφαίρεση</button></div>`).join(""):"Δεν υπάρχουν αγαπημένα.";
- $("productFavorites").querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{let p=favorites[+b.dataset.f];fillProduct(p);showProduct(p,false)});
- $("productFavorites").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{favorites.splice(+b.dataset.r,1);save();drawProductLists()});
-}
-function fillProduct(p){$("pname").value=p.name||"";$("barcode").value=p.code||"";for(let k of ["carbs","sugars","fat","sat","fiber","salt","protein"])$(k).value=p[k]??""}
 
-$("lookupBtn").onclick=async()=>{
- let code=$("barcode").value.replace(/\D/g,"");
- if(!code){
-  alert("Πληκτρολόγησε barcode.");
-  return;
- }
-
- let b=$("lookupBtn");
- b.disabled=true;
- b.textContent="Αναζήτηση…";
-
- try{
-  let res=await fetch(
-   `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`
-  );
-
-  if(!res.ok)throw 0;
-
-  let d=await res.json();
-  if(d.status!==1)throw 1;
-
-  let x=d.product;
-  let n=x.nutriments||{};
-
-  let p={
-   code,
-   name:x.product_name_el||x.product_name||x.generic_name||"Άγνωστο προϊόν",
-   carbs:val(n.carbohydrates_100g),
-   sugars:val(n.sugars_100g),
-   fat:val(n.fat_100g),
-   sat:val(n["saturated-fat_100g"]),
-   fiber:val(n.fiber_100g),
-   salt:val(n.salt_100g),
-   protein:val(n.proteins_100g),
-
-   ingredients:x.ingredients_text_el||
-               x.ingredients_text||
-               "",
-
-   additives:x.additives_tags||[],
-   allergens:x.allergens_tags||[]
-  };
-
-  fillProduct(p);
-  showProduct(p);
-
- }catch(e){
-  alert(
-   e===1
-   ?"Δεν βρέθηκε το προϊόν."
-   :"Αποτυχία σύνδεσης με τη βάση. Δοκίμασε ξανά ή κάνε χειροκίνητη καταχώριση."
-  );
- }finally{
-  b.disabled=false;
-  b.textContent="Αναζήτηση προϊόντος";
- }
-};
 function foodKey(name){return String(name||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("el").replace(/[^\p{L}\p{N}]+/gu," ").trim()}
 function categoryFoods(type){return Array.isArray(foodCatalog[type])?foodCatalog[type]:[]}
 let foodSuggestionsOpen=false;
