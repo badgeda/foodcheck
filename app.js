@@ -47,6 +47,22 @@ function assess(p,portion=100){
  let portionCarbs=c==null?null:c*portion/100;
  return {score,level,confidence,notes,portionCarbs,known};
 }
+function assessMeal(p,portion=100){
+ const c=p.carbs,s=p.sugars,sat=p.sat,fi=p.fiber,salt=p.salt;
+ let risk=0,notes=[],known=0;
+ if(c!=null){known++;if(c>=60){risk+=30;notes.push("Υψηλή ποσότητα υδατανθράκων ανά 100 g.")}else if(c>=40){risk+=22;notes.push("Αρκετοί υδατάνθρακες ανά 100 g.")}else if(c>=25){risk+=14;notes.push("Μέτρια προς αυξημένη ποσότητα υδατανθράκων.")}else risk+=5}
+ if(s!=null){known++;if(s>=15){risk+=18;notes.push("Υψηλά σάκχαρα.")}else if(s>=5){risk+=10;notes.push("Αξιόλογη ποσότητα σακχάρων.")}else risk+=2}
+ if(sat!=null){known++;if(sat>=5){risk+=17;notes.push("Υψηλά κορεσμένα λιπαρά.")}else if(sat>=2){risk+=10;notes.push("Μέτρια προς αυξημένα κορεσμένα λιπαρά.")}else risk+=2}
+ if(salt!=null){known++;if(salt>=1.5){risk+=12;notes.push("Υψηλό αλάτι.")}else if(salt>=.3){risk+=6;notes.push("Αξιόλογη ποσότητα αλατιού.")}else risk+=1}
+ if(fi!=null){known++;if(fi>=6){risk-=9;notes.push("Οι φυτικές ίνες είναι θετικό στοιχείο.")}else if(fi>=3){risk-=4}}
+ if(p.fat!=null){known++;if(p.fat>=20&&sat!=null&&sat<2)notes.push("Υπάρχουν αρκετά συνολικά λιπαρά· αξιολόγησε την πηγή τους.")}
+ risk=Math.max(0,Math.min(100,risk));
+ let score=100-risk;
+ let confidence=known>=5?"Καλή":known>=3?"Μέτρια":"Χαμηλή";
+ let level=score>=75?"risk-low":score>=50?"risk-mid":"risk-high";
+ let portionCarbs=c==null?null:c*portion/100;
+ return {score,level,confidence,notes,portionCarbs,known};
+}
 function resultHTML(p,portion,r){
  let riskText=r.score>=75?"Χαμηλότερος διατροφικός κίνδυνος στα διαθέσιμα στοιχεία":r.score>=50?"Μέτριος διατροφικός κίνδυνος – προσοχή στη μερίδα":"Αυξημένος διατροφικός κίνδυνος";
  return `<div class="result ${r.level}"><div class="scoreline"><div class="score">${r.score}/100</div><div><b>${riskText}</b><br><span class="pill">Ποιότητα δεδομένων: ${r.confidence}</span></div></div><div class="meter"><span style="width:${r.score}%"></span></div><b>${esc(p.name||"Τρόφιμο")}</b><p><b>Ανά 100 g:</b> ${p.carbs??"—"} g υδατάνθρακες · ${p.sugars??"—"} g σάκχαρα · ${p.sat??"—"} g κορεσμένα · ${p.fiber??"—"} g ίνες · ${p.salt??"—"} g αλάτι.</p><p><b>Στη μερίδα ${portion} g:</b> ${r.portionCarbs==null?"Δεν υπολογίζονται οι υδατάνθρακες λόγω ελλιπών στοιχείων":r.portionCarbs.toFixed(1)+" g υδατάνθρακες"}.</p>${r.notes.length?"<b>Παρατηρήσεις</b><ul>"+r.notes.map(n=>"<li>"+esc(n)+"</li>").join("")+"</ul>":""}<p class="muted">Η βαθμολογία είναι ενδεικτική, βασίζεται στα διαθέσιμα στοιχεία και δεν αποτελεί ιατρική αξιολόγηση.</p></div>`;
