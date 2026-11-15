@@ -32,20 +32,80 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 function tab(name){document.querySelectorAll("main>section").forEach(s=>s.classList.toggle("hidden",s.id!=="tab-"+name));document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===name))}
 document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>tab(b.dataset.tab));
 function assess(p,portion=100){
- const c=p.carbs,s=p.sugars,sat=p.sat,fi=p.fiber,salt=p.salt;
- let risk=0,notes=[],known=0;
- if(c!=null){known++;if(c>=60){risk+=30;notes.push("Υψηλή ποσότητα υδατανθράκων ανά 100 g.")}else if(c>=40){risk+=22;notes.push("Αρκετοί υδατάνθρακες ανά 100 g.")}else if(c>=25){risk+=14;notes.push("Μέτρια προς αυξημένη ποσότητα υδατανθράκων.")}else risk+=5}
- if(s!=null){known++;if(s>=15){risk+=18;notes.push("Υψηλά σάκχαρα.")}else if(s>=5){risk+=10;notes.push("Αξιόλογη ποσότητα σακχάρων.")}else risk+=2}
- if(sat!=null){known++;if(sat>=5){risk+=17;notes.push("Υψηλά κορεσμένα λιπαρά.")}else if(sat>=2){risk+=10;notes.push("Μέτρια προς αυξημένα κορεσμένα λιπαρά.")}else risk+=2}
- if(salt!=null){known++;if(salt>=1.5){risk+=12;notes.push("Υψηλό αλάτι.")}else if(salt>=.3){risk+=6;notes.push("Αξιόλογη ποσότητα αλατιού.")}else risk+=1}
- if(fi!=null){known++;if(fi>=6){risk-=9;notes.push("Οι φυτικές ίνες είναι θετικό στοιχείο.")}else if(fi>=3){risk-=4}}
- if(p.fat!=null){known++;if(p.fat>=20&&sat!=null&&sat<2)notes.push("Υπάρχουν αρκετά συνολικά λιπαρά· αξιολόγησε την πηγή τους.")}
- risk=Math.max(0,Math.min(100,risk));
- let score=100-risk;
- let confidence=known>=5?"Καλή":known>=3?"Μέτρια":"Χαμηλή";
- let level=score>=75?"risk-low":score>=50?"risk-mid":"risk-high";
- let portionCarbs=c==null?null:c*portion/100;
- return {score,level,confidence,notes,portionCarbs,known};
+ const c=p.carbs,s=p.sugars,sat=p.sat,fi=p.fiber,salt=p.salt,fat=p.fat,protein=p.protein;
+ const valid=v=>v!=null&&Number.isFinite(Number(v))&&Number(v)>=0;
+ const notes=[];
+ const portionCarbs=valid(c)?c*portion/100:null;
+ const portionProtein=valid(protein)?protein*portion/100:null;
+
+ // Αξιολόγηση υδατανθράκων για τον διαβήτη
+ let diabetesScore=null;
+ if(valid(c)){
+  let carbScore=portionCarbs<=5?100:portionCarbs<=10?90:portionCarbs<=15?80:portionCarbs<=20?70:portionCarbs<=30?55:portionCarbs<=45?35:15;
+  let sugarScore=100;
+  if(valid(s)){
+   sugarScore=s<=5?100:s<=22.5?65:25;
+   if(s>22.5)notes.push("Υψηλά σάκχαρα ανά 100 g.");
+   else if(s>5)notes.push("Μέτρια ποσότητα σακχάρων ανά 100 g.");
+  }
+  let fiberBonus=valid(fi)?(fi>=6?10:fi>=3?5:0):0;
+  diabetesScore=Math.min(100,Math.round(carbScore*0.8+sugarScore*0.2+fiberBonus));
+  if(portionCarbs>20)notes.push("Αυξημένοι υδατάνθρακες στην επιλεγμένη μερίδα.");
+  if(valid(fi)&&fi>=3)notes.push("Οι φυτικές ίνες είναι θετικό στοιχείο.");
+ }
+
+ // Αξιολόγηση λιπιδίων και αλατιού
+ let lipidScore=null;
+ if(valid(sat)&&valid(salt)){
+  let satScore=sat<=1.5?100:sat<=5?65:25;
+  let saltScore=salt<=0.3?100:salt<=1.5?60:20;
+  lipidScore=Math.round(satScore*0.7+saltScore*0.3);
+  if(sat>5)notes.push("Υψηλά κορεσμένα λιπαρά.");
+  else if(sat>1.5)notes.push("Μέτρια προς αυξημένα κορεσμένα λιπαρά.");
+  if(salt>1.5)notes.push("Υψηλή περιεκτικότητα σε αλάτι.");
+  else if(salt>0.3)notes.push("Αξιόλογη ποσότητα αλατιού.");
+ }
+ if(valid(fat)&&fat>17.5&&valid(sat)&&sat<=1.5){
+  notes.push("Υψηλά συνολικά λιπαρά, αλλά σχετικά χαμηλά κορεσμένα. Έχει σημασία η πηγή τους.");
+ }
+
+ // Πρωτεΐνες: θετική συμβολή, όχι αυτόματη ένδειξη υγιεινού τροφίμου
+ let proteinScore=null;
+ if(valid(protein)){
+  proteinScore=portionProtein>=20?100:portionProtein>=10?85:portionProtein>=5?65:40;
+  if(portionProtein>=10)notes.push("Καλή ποσότητα πρωτεΐνης στην επιλεγμένη μερίδα.");
+ }
+
+ // Συνολική βαθμολογία με βάρη
+ const parts=[
+  {score:diabetesScore,weight:45},
+  {score:lipidScore,weight:35},
+  {score:proteinScore,weight:10},
+  {score:valid(fi)?(fi>=6?100:fi>=3?75:40):null,weight:10}
+ ];
+ const available=parts.filter(x=>x.score!=null);
+ const weight=available.reduce((a,x)=>a+x.weight,0);
+ let score=weight?Math.round(available.reduce((a,x)=>a+x.score*x.weight,0)/weight):null;
+
+ // Πληρότητα δεδομένων και περιορισμός υπερβολικά καλής βαθμολογίας
+ const fields=[c,s,sat,salt,fi,fat,protein];
+ const known=fields.filter(valid).length;
+ const criticalMissing=!valid(c)||!valid(sat)||!valid(salt);
+ const confidence=known>=6&&!criticalMissing?"Καλή":known>=4?"Μέτρια":"Χαμηλή";
+ if(score!=null&&criticalMissing)score=Math.min(score,69);
+ if(score!=null&&known<4)score=Math.min(score,59);
+
+ if(!valid(c))notes.push("Δεν υπάρχουν στοιχεία υδατανθράκων.");
+ if(!valid(sat))notes.push("Δεν υπάρχουν στοιχεία κορεσμένων λιπαρών.");
+ if(!valid(salt))notes.push("Δεν υπάρχουν στοιχεία αλατιού.");
+ if(!valid(protein))notes.push("Δεν υπάρχουν στοιχεία πρωτεϊνών.");
+
+ const level=score==null?"risk-high":score>=75?"risk-low":score>=50?"risk-mid":"risk-high";
+
+ return {
+  score,level,confidence,notes,portionCarbs,portionProtein,known,
+  diabetesScore,lipidScore,proteinScore
+ };
 }
 function assessMeal(p,portion=100){
  const c=p.carbs,s=p.sugars,sat=p.sat,fi=p.fiber,salt=p.salt;
