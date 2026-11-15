@@ -159,85 +159,64 @@ function drawProductLists(){
  $("productFavorites").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{favorites.splice(+b.dataset.r,1);save();drawProductLists()});
 }
 function fillProduct(p){$("pname").value=p.name||"";$("barcode").value=p.code||"";for(let k of ["carbs","sugars","fat","sat","fiber","salt","protein"])$(k).value=p[k]??""}
-$("lookupBtn").onclick=async()=>{let code=$("barcode").value.replace(/\D/g,"");if(!code){alert("Πληκτρολόγησε barcode.");return}let b=$("lookupBtn");b.disabled=true;b.textContent="Αναζήτηση…";try{let res=await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`);if(!res.ok)throw 0;let d=await res.json();if(d.status!==1)throw 1;let x=d.product,n=x.nutriments||{};let p={code,name:x.product_name_el||x.product_name||x.generic_name||"Άγνωστο προϊόν",carbs:val(n.carbohydrates_100g),sugars:val(n.sugars_100g),fat:val(n.fat_100g),sat:val(n["saturated-fat_100g"]),fiber:val(n.fiber_100g),salt:val(n.salt_100g),protein:val(n.proteins_100g)};fillProduct(p);showProduct(p)}catch(e){alert(e===1?"Δεν βρέθηκε το προϊόν.":"Αποτυχία σύνδεσης με τη βάση. Δοκίμασε ξανά ή κάνε χειροκίνητη καταχώριση.")}finally{b.disabled=false;b.textContent="Αναζήτηση προϊόντος"}};
 
-
-$("scanBtn").onclick=async()=>{
- if(!window.ZXing||!ZXing.BrowserMultiFormatReader){
-  alert("Δεν φορτώθηκε η νέα βιβλιοθήκη σάρωσης. Έλεγξε τη σύνδεση στο διαδίκτυο.");
+$("lookupBtn").onclick=async()=>{
+ let code=$("barcode").value.replace(/\D/g,"");
+ if(!code){
+  alert("Πληκτρολόγησε barcode.");
   return;
  }
 
- const box=$("scanner");
-
- if(scanner){
-  try{scanner.reset()}catch{}
-  scanner=null;
-  box.classList.add("hidden");
-  box.innerHTML="";
-  return;
- }
-
- box.classList.remove("hidden");
-
- box.innerHTML=`
-  <video id="foodcheck-video"
-   style="width:100%;max-height:60vh;object-fit:contain;background:#000"
-   autoplay muted playsinline></video>
- `;
-
- const video=$("foodcheck-video");
-
- const hints=new Map();
- hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[
-  ZXing.BarcodeFormat.EAN_13,
-  ZXing.BarcodeFormat.EAN_8,
-  ZXing.BarcodeFormat.UPC_A,
-  ZXing.BarcodeFormat.UPC_E
- ]);
-
- const reader=new ZXing.BrowserMultiFormatReader(hints,250);
- scanner=reader;
- let handled=false;
+ let b=$("lookupBtn");
+ b.disabled=true;
+ b.textContent="Αναζήτηση…";
 
  try{
-  await reader.decodeFromConstraints(
-   {
-    audio:false,
-    video:{facingMode:{ideal:"environment"}}
-   },
-   video,
-   (result,error)=>{
-    if(!result||handled)return;
-
-    const code=result.getText().replace(/[^0-9]/g,"");
-
-    if(!/^\d{13}$/.test(code))return;
-
-    handled=true;
-    $("barcode").value=code;
-
-    try{reader.reset()}catch{}
-    scanner=null;
-    box.classList.add("hidden");
-    box.innerHTML="";
-
-    $("lookupBtn").click();
-   }
+  let res=await fetch(
+   `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`
   );
+
+  if(!res.ok)throw 0;
+
+  let d=await res.json();
+  if(d.status!==1)throw 1;
+
+  let x=d.product;
+  let n=x.nutriments||{};
+
+  let p={
+   code,
+   name:x.product_name_el||x.product_name||x.generic_name||"Άγνωστο προϊόν",
+   carbs:val(n.carbohydrates_100g),
+   sugars:val(n.sugars_100g),
+   fat:val(n.fat_100g),
+   sat:val(n["saturated-fat_100g"]),
+   fiber:val(n.fiber_100g),
+   salt:val(n.salt_100g),
+   protein:val(n.proteins_100g),
+
+   ingredients:x.ingredients_text_el||
+               x.ingredients_text||
+               "",
+
+   additives:x.additives_tags||[],
+   allergens:x.allergens_tags||[]
+  };
+
+  fillProduct(p);
+  showProduct(p);
+
  }catch(e){
-  console.error("FoodCheck ZXing scanner:",e);
-
-  try{reader.reset()}catch{}
-
-  scanner=null;
-  box.classList.add("hidden");
-  box.innerHTML="";
-
-  alert("Δεν ξεκίνησε η σάρωση. Έλεγξε την άδεια κάμερας.");
+  alert(
+   e===1
+   ?"Δεν βρέθηκε το προϊόν."
+   :"Αποτυχία σύνδεσης με τη βάση. Δοκίμασε ξανά ή κάνε χειροκίνητη καταχώριση."
+  );
+ }finally{
+  b.disabled=false;
+  b.textContent="Αναζήτηση προϊόντος";
  }
 };
-
 function foodKey(name){return String(name||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("el").replace(/[^\p{L}\p{N}]+/gu," ").trim()}
 function categoryFoods(type){return Array.isArray(foodCatalog[type])?foodCatalog[type]:[]}
 let foodSuggestionsOpen=false;
