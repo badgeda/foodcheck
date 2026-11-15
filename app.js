@@ -124,8 +124,28 @@ function assessMeal(p,portion=100){
  return {score,level,confidence,notes,portionCarbs,known};
 }
 function resultHTML(p,portion,r){
- let riskText=r.score>=75?"Χαμηλότερος διατροφικός κίνδυνος στα διαθέσιμα στοιχεία":r.score>=50?"Μέτριος διατροφικός κίνδυνος – προσοχή στη μερίδα":"Αυξημένος διατροφικός κίνδυνος";
- return `<div class="result ${r.level}"><div class="scoreline"><div class="score">${r.score}/100</div><div><b>${riskText}</b><br><span class="pill">Ποιότητα δεδομένων: ${r.confidence}</span></div></div><div class="meter"><span style="width:${r.score}%"></span></div><b>${esc(p.name||"Τρόφιμο")}</b><p><b>Ανά 100 g:</b> ${p.carbs??"—"} g υδατάνθρακες · ${p.sugars??"—"} g σάκχαρα · ${p.sat??"—"} g κορεσμένα · ${p.fiber??"—"} g ίνες · ${p.salt??"—"} g αλάτι.</p><p><b>Στη μερίδα ${portion} g:</b> ${r.portionCarbs==null?"Δεν υπολογίζονται οι υδατάνθρακες λόγω ελλιπών στοιχείων":r.portionCarbs.toFixed(1)+" g υδατάνθρακες"}.</p>${r.notes.length?"<b>Παρατηρήσεις</b><ul>"+r.notes.map(n=>"<li>"+esc(n)+"</li>").join("")+"</ul>":""}<p class="muted">Η βαθμολογία είναι ενδεικτική, βασίζεται στα διαθέσιμα στοιχεία και δεν αποτελεί ιατρική αξιολόγηση.</p></div>`;
+ const scoreText=r.score==null?"Δεν υπολογίστηκε":r.score+"/100";
+ const riskText=r.score==null?"Ανεπαρκή διατροφικά στοιχεία":r.score>=75?"Καλύτερη διατροφική εικόνα":r.score>=50?"Μέτρια διατροφική εικόνα – χρειάζεται προσοχή":"Χαμηλή διατροφική εικόνα – αυξημένη προσοχή";
+ const subScore=v=>v==null?"Δεν αξιολογήθηκε":v+"/100";
+ return `<div class="result ${r.level}">
+ <div class="scoreline">
+  <div class="score">${scoreText}</div>
+  <div><b>${riskText}</b><br><span class="pill">Ποιότητα δεδομένων: ${r.confidence}</span></div>
+ </div>
+ ${r.score==null?"":`<div class="meter"><span style="width:${r.score}%"></span></div>`}
+ <b>${esc(p.name||"Τρόφιμο")}</b>
+ <h3>Διατροφικά στοιχεία ανά 100 g</h3>
+ <p>Υδατάνθρακες: ${p.carbs??"—"} g · Σάκχαρα: ${p.sugars??"—"} g · Πρωτεΐνες: ${p.protein??"—"} g.</p>
+ <p>Συνολικά λιπαρά: ${p.fat??"—"} g · Κορεσμένα: ${p.sat??"—"} g · Φυτικές ίνες: ${p.fiber??"—"} g · Αλάτι: ${p.salt??"—"} g.</p>
+ <h3>Ατομική αξιολόγηση</h3>
+ <p><b>Διαβήτης:</b> ${subScore(r.diabetesScore)}</p>
+ <p><b>Τριγλυκερίδια / χοληστερόλη και αλάτι:</b> ${subScore(r.lipidScore)}</p>
+ <p><b>Πρωτεΐνες:</b> ${subScore(r.proteinScore)}</p>
+ <h3>Στη μερίδα των ${portion} g</h3>
+ <p>Υδατάνθρακες: ${r.portionCarbs==null?"Δεν υπολογίζονται":r.portionCarbs.toFixed(1)+" g"} · Πρωτεΐνες: ${r.portionProtein==null?"Δεν υπολογίζονται":r.portionProtein.toFixed(1)+" g"}.</p>
+ ${r.notes.length?"<b>Παρατηρήσεις</b><ul>"+r.notes.map(n=>"<li>"+esc(n)+"</li>").join("")+"</ul>":""}
+ <p class="muted">Η βαθμολογία είναι ενδεικτική, βασίζεται στα διαθέσιμα στοιχεία και δεν αποτελεί ιατρική αξιολόγηση.</p>
+ </div>`;
 }
 function currentProduct(){return {name:$("pname").value.trim()||"Χειροκίνητο προϊόν",code:$("barcode").value.trim(),carbs:num("carbs"),sugars:num("sugars"),fat:num("fat"),sat:num("sat"),fiber:num("fiber"),salt:num("salt"),protein:num("protein")}}
 function showProduct(p,saveHistory=true){lastProduct=p;let portion=num("portion")||50,r=assess(p,portion);$("productResult").innerHTML=resultHTML(p,portion,r);if(saveHistory){history.unshift({name:p.name,portion,date:new Date().toLocaleString("el-GR"),product:p,score:r.score});history=history.slice(0,40);save();drawProductLists()}}
