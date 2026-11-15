@@ -42,7 +42,7 @@ function assess(p,portion=100){
  let diabetesScore=null;
  if(valid(c)){
   let carbScore=portionCarbs<=5?100:portionCarbs<=10?90:portionCarbs<=15?80:portionCarbs<=20?70:portionCarbs<=30?55:portionCarbs<=45?35:15;
-  let sugarScore=100;
+  let sugarScore=valid(s)?(s<=5?100:s<=22.5?65:25):65;
   if(valid(s)){
    sugarScore=s<=5?100:s<=22.5?65:25;
    if(s>22.5)notes.push("Υψηλά σάκχαρα ανά 100 g.");
