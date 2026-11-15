@@ -64,7 +64,74 @@ function drawProductLists(){
 }
 function fillProduct(p){$("pname").value=p.name||"";$("barcode").value=p.code||"";for(let k of ["carbs","sugars","fat","sat","fiber","salt","protein"])$(k).value=p[k]??""}
 $("lookupBtn").onclick=async()=>{let code=$("barcode").value.replace(/\D/g,"");if(!code){alert("Πληκτρολόγησε barcode.");return}let b=$("lookupBtn");b.disabled=true;b.textContent="Αναζήτηση…";try{let res=await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`);if(!res.ok)throw 0;let d=await res.json();if(d.status!==1)throw 1;let x=d.product,n=x.nutriments||{};let p={code,name:x.product_name_el||x.product_name||x.generic_name||"Άγνωστο προϊόν",carbs:val(n.carbohydrates_100g),sugars:val(n.sugars_100g),fat:val(n.fat_100g),sat:val(n["saturated-fat_100g"]),fiber:val(n.fiber_100g),salt:val(n.salt_100g),protein:val(n.proteins_100g)};fillProduct(p);showProduct(p)}catch(e){alert(e===1?"Δεν βρέθηκε το προϊόν.":"Αποτυχία σύνδεσης με τη βάση. Δοκίμασε ξανά ή κάνε χειροκίνητη καταχώριση.")}finally{b.disabled=false;b.textContent="Αναζήτηση προϊόντος"}};
-$("scanBtn").onclick=async()=>{if(!window.Html5Qrcode||!window.Html5QrcodeSupportedFormats){alert("Η βιβλιοθήκη σάρωσης δεν φορτώθηκε. Μπορείς να πληκτρολογήσεις το barcode.");return}if(scanner){try{await scanner.stop()}catch{}try{scanner.clear()}catch{}scanner=null;$("scanner").classList.add("hidden");return}$("scanner").classList.remove("hidden");const formats=[Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.CODE_39,Html5QrcodeSupportedFormats.ITF].filter(x=>x!==undefined);scanner=new Html5Qrcode("scanner",{formatsToSupport:formats,verbose:true});try{const boxWidth=Math.min(320,Math.max(240,window.innerWidth-72));await scanner.start({facingMode:"environment"},{fps:15,qrbox:{width:boxWidth,height:200},{fps:15,aspectRatio:1.7777778,disableFlip:false},async decodedText=>{$("barcode").value=decodedText.replace(/[^0-9]/g,"");try{await scanner.stop()}catch{}try{scanner.clear()}catch{}scanner=null;$("scanner").classList.add("hidden");$("lookupBtn").click()})}catch(e){console.error("FoodCheck barcode scanner:",e);try{if(scanner){await scanner.stop();scanner.clear()}}catch{}scanner=null;$("scanner").classList.add("hidden");alert("Δεν ξεκίνησε σωστά η σάρωση. Έλεγξε την άδεια κάμερας ή δοκίμασε ξανά.")}};function foodKey(name){return String(name||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("el").replace(/[^\p{L}\p{N}]+/gu," ").trim()}
+
+$("scanBtn").onclick=async()=>{
+ if(!window.Html5Qrcode||!window.Html5QrcodeSupportedFormats){
+  alert("Η βιβλιοθήκη σάρωσης δεν φορτώθηκε. Μπορείς να πληκτρολογήσεις το barcode.");
+  return;
+ }
+
+ if(scanner){
+  try{await scanner.stop()}catch{}
+  try{scanner.clear()}catch{}
+  scanner=null;
+  $("scanner").classList.add("hidden");
+  return;
+ }
+
+ $("scanner").classList.remove("hidden");
+
+ const formats=[
+  Html5QrcodeSupportedFormats.EAN_13,
+  Html5QrcodeSupportedFormats.EAN_8,
+  Html5QrcodeSupportedFormats.UPC_A,
+  Html5QrcodeSupportedFormats.UPC_E,
+  Html5QrcodeSupportedFormats.CODE_128,
+  Html5QrcodeSupportedFormats.CODE_39,
+  Html5QrcodeSupportedFormats.ITF
+ ].filter(x=>x!==undefined);
+
+ scanner=new Html5Qrcode("scanner",{
+  formatsToSupport:formats,
+  verbose:false
+ });
+
+ try{
+  await scanner.start(
+   {facingMode:"environment"},
+   {
+    fps:10,
+    aspectRatio:1.7777778,
+    disableFlip:false
+   },
+   async decodedText=>{
+    $("barcode").value=decodedText.replace(/[^0-9]/g,"");
+
+    try{await scanner.stop()}catch{}
+    try{scanner.clear()}catch{}
+
+    scanner=null;
+    $("scanner").classList.add("hidden");
+    $("lookupBtn").click();
+   }
+  );
+ }catch(e){
+  console.error("FoodCheck barcode scanner:",e);
+
+  try{
+   if(scanner){
+    await scanner.stop();
+    scanner.clear();
+   }
+  }catch{}
+
+  scanner=null;
+  $("scanner").classList.add("hidden");
+
+  alert("Δεν ξεκίνησε σωστά η σάρωση. Έλεγξε την άδεια κάμερας ή δοκίμασε ξανά.");
+ }
+};
+function foodKey(name){return String(name||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("el").replace(/[^\p{L}\p{N}]+/gu," ").trim()}
 function categoryFoods(type){return Array.isArray(foodCatalog[type])?foodCatalog[type]:[]}
 let foodSuggestionsOpen=false;
 function drawFoodSuggestions(open=foodSuggestionsOpen){const type=$("foodItemType").value,query=foodKey($("foodItemName").value);const list=categoryFoods(type).filter(x=>!query||foodKey(x.name).includes(query));const box=$("foodSuggestions");box.innerHTML=list.length?list.map((x,i)=>`<button type="button" role="option" data-foodpick="${i}" data-foodname="${esc(x.name)}">${esc(x.name)}</button>`).join(""):'<div class="food-empty">Δεν υπάρχουν αποθηκευμένα τρόφιμα σε αυτή την κατηγορία. Μπορείς να γράψεις νέα ονομασία.</div>';box.classList.toggle("hidden",!open);if(open){box.querySelectorAll("[data-foodpick]").forEach(b=>b.onclick=()=>{const name=b.dataset.foodname;$("foodItemName").value=name;recallFood();foodSuggestionsOpen=false;drawFoodSuggestions(false)})}}
