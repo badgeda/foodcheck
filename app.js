@@ -98,7 +98,7 @@ $("scanBtn").onclick=async()=>{
 
  try{
   await scanner.start(
-   {facingMode:"environment"},
+   {facingMode:"environment",advanced:[{focusMode:"continuous"}]},
    {
     fps:10,
     aspectRatio:1.7777778,
