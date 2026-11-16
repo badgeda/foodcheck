@@ -126,23 +126,19 @@ function assess(p,portion=100){
  }
 
  const ing=String(data.ingredients||"").toLocaleLowerCase("el");
- const explicitTrans=(valid(data.trans)&&Number(data.trans)>0)||
-  /μερικώς υδρογονωμέν|partially hydrogenated|trans\s*fat/.test(ing);
-
-const confirmedTrans=valid(data.trans)&&Number(data.trans)>0;
+ const confirmedTrans=valid(data.trans)&&Number(data.trans)>0;
+ const ingredientTrans=/trans\\s*fat/.test(ing);
+ const partiallyHydrogenated=/μερικώς υδρογονωμέν|partially hydrogenated/.test(ing);
+ const explicitTrans=confirmedTrans||ingredientTrans||partiallyHydrogenated;
  const forbiddenReasons=[];
-if(nova===4) forbiddenReasons.push("Υπερεπεξεργασμένο προϊόν (NOVA 4).");
-if(confirmedTrans) forbiddenReasons.push("Περιέχει trans λιπαρά.");
-else if(/μερικώς υδρογονωμέν|partially hydrogenated/.test(ing))
- forbiddenReasons.push("Περιέχει μερικώς υδρογονωμένα λιπαρά.");
+ if(nova===4) forbiddenReasons.push("Υπερεπεξεργασμένο προϊόν (NOVA 4).");
+ if(confirmedTrans||ingredientTrans) forbiddenReasons.push("Περιέχει trans λιπαρά.");
+ else if(partiallyHydrogenated) forbiddenReasons.push("Περιέχει μερικώς υδρογονωμένα λιπαρά.");
 
- if(confirmedTrans){
+ if(explicitTrans){
   quality-=20;
-  qualityReasons.push("Εντοπίστηκαν trans λιπαρά.");
-}else if(/μερικώς υδρογονωμέν|partially hydrogenated/.test(ing)){
-  quality-=20;
-  qualityReasons.push("Εντοπίστηκαν μερικώς υδρογονωμένα λιπαρά στα συστατικά.");
-}
+  qualityReasons.push(confirmedTrans||ingredientTrans?"Εντοπίστηκαν trans λιπαρά.":"Εντοπίστηκαν μερικώς υδρογονωμένα λιπαρά στα συστατικά.");
+ }
  if(/σιρόπι γλυκόζης|σιρόπι φρουκτόζης|glucose syrup|fructose syrup/.test(ing)){
   quality-=5;
   qualityReasons.push("Περιλαμβάνει σιρόπι πρόσθετων σακχάρων.");
