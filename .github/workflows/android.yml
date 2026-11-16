@@ -55,7 +55,7 @@ jobs:
         run: |
           test -n "$FOODCHECK_RELEASE_KEYSTORE_BASE64"
           mkdir -p "$RUNNER_TEMP/foodcheck-signing"
-          printf '%s' "$FOODCHECK_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/foodcheck-signing/foodcheck-release.keystore"
+          printf '%s' "$FOODCHECK_RELEASE_KEYSTORE_BASE64" | sed '/-----BEGIN CERTIFICATE-----/d; /-----END CERTIFICATE-----/d' | tr -d '\r\n ' | base64 --decode > "$RUNNER_TEMP/foodcheck-signing/foodcheck-release.keystore"
           test -s "$RUNNER_TEMP/foodcheck-signing/foodcheck-release.keystore"
 
       - name: Configure release signing
