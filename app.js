@@ -361,13 +361,22 @@ function addRecipeIngredient(){
  ["recipeName","recipeQty","recipeEnergy","recipeCarbs","recipeSugars","recipeFat","recipeSat","recipeFiber","recipeSalt","recipeProtein","recipeTrans"].forEach(id=>$(id).value="");
  drawRecipeItems();
 }
+function updateRecipeWeightSummary(){
+ const box=$("recipeWeightSummary");if(!box)return;
+ if(!recipeItems.length){box.innerHTML="";return}
+ const weights=recipeItems.map(x=>recipeWeight(x)),known=weights.filter(w=>w!=null).reduce((a,w)=>a+w,0),complete=weights.every(w=>w!=null);
+ const portions=Math.max(1,num("recipeTotalPortions")||1);
+ box.innerHTML=complete?`<b>Εκτιμώμενο συνολικό βάρος υλικών: ${known.toFixed(1)} g</b><br>Εκτιμώμενο βάρος ανά μερίδα: ${(known/portions).toFixed(1)} g`:`Έχουν υπολογιστεί ${known.toFixed(1)} g από τα υλικά. Δεν μπορεί να υπολογιστεί πλήρες συνολικό βάρος, επειδή ένα ή περισσότερα υλικά δεν έχουν ασφαλή μετατροπή σε γραμμάρια.`;
+}
 function drawRecipeItems(){
  const box=$("recipeItems");if(!box)return;
  box.innerHTML=recipeItems.length?'<h3>Υλικά που καταχωρίστηκαν</h3>'+recipeItems.map((x,i)=>{const w=recipeWeight(x);return `<div class="item"><b>${esc(x.name)}</b><br><span class="muted">${x.quantity} ${recipeUnitLabel(x.unit)} · ${w==null?"Δεν υπάρχει ασφαλής μετατροπή σε γραμμάρια":("περίπου "+w.toFixed(1)+" g")}</span><br><span class="muted">Υδατάνθρακες ${x.carbs??"—"} · Σάκχαρα ${x.sugars??"—"} · Κορεσμένα ${x.sat??"—"} · Ίνες ${x.fiber??"—"} · Αλάτι ${x.salt??"—"} g/100g</span> <button class="secondary small" data-recipeedit="${i}">Διόρθωση</button> <button class="danger small" data-recipedel="${i}">Αφαίρεση</button></div>`}).join(""):"<p class='muted'>Δεν έχουν προστεθεί υλικά συνταγής.</p>";
  box.querySelectorAll("[data-recipedel]").forEach(b=>b.onclick=()=>{recipeItems.splice(+b.dataset.recipedel,1);drawRecipeItems()});
  box.querySelectorAll("[data-recipeedit]").forEach(b=>b.onclick=()=>{const i=+b.dataset.recipeedit,x=recipeItems[i];$("recipeName").value=x.name;$("recipeQty").value=x.quantity;$("recipeUnit").value=x.unit;for(const field of ["energyKj","carbs","sugars","fat","sat","fiber","salt","protein","trans"])$("recipe"+field[0].toUpperCase()+field.slice(1)).value=x[field]??"";recipeItems.splice(i,1);drawRecipeItems();$("recipeName").focus()});
+ updateRecipeWeightSummary();
 }
 $("addRecipeIngredient").onclick=addRecipeIngredient;
+$("recipeTotalPortions").addEventListener("input",updateRecipeWeightSummary);
 
 function addItem(){let name=$("foodItemName").value.trim();if(!name){alert("Γράψε το τρόφιμο.");return}if(num("itemWeight")==null){alert("Συμπλήρωσε το βάρος του τροφίμου σε γραμμάρια.");return}let it={name,type:$("foodItemType").value,carbs:num("itemCarbs"),plannedWeight:num("itemWeight"),consumedWeight:num("itemConsumedWeight"),weight:num("itemWeight"),vessel:$("itemVessel").value,vesselDiameter:num("itemVesselDiameter"),sugars:num("itemSugars"),sat:num("itemSat"),fiber:num("itemFiber"),salt:num("itemSalt")};mealItems.push(it);rememberFood(it);$("foodItemName").value="";foodSuggestionsOpen=false;drawFoodSuggestions(false);["itemCarbs","itemWeight","itemConsumedWeight","itemVesselDiameter","itemSugars","itemSat","itemFiber","itemSalt"].forEach(id=>$(id).value="");$("itemVessel").value="";drawMealItems()}
 $("foodItemType").onchange=()=>{$("foodItemName").value="";clearFoodNutrition();foodSuggestionsOpen=true;drawFoodSuggestions(true)};
