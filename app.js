@@ -122,6 +122,11 @@ $("productHistory").querySelectorAll("[data-h]").forEach(b=>b.onclick=e=>{
  $("productFavorites").innerHTML=favorites.length?favorites.map((p,i)=>`<div class="item"><b>${esc(p.name)}</b> <button class="secondary small" data-f="${i}">Έλεγχος</button> <button class="danger small" data-r="${i}">Αφαίρεση</button></div>`).join(""):"Δεν υπάρχουν αγαπημένα.";
  $("productFavorites").querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{let p=favorites[+b.dataset.f];fillProduct(p);showProduct(p,false)});
  $("productFavorites").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{favorites.splice(+b.dataset.r,1);save();drawProductLists()});
+
+function val(v){
+ if(v===null||v===undefined||v==="")return null;
+ const n=Number(v);
+ return Number.isFinite(n)&&n>=0?n:null;
 }
 function fillProduct(p){$("pname").value=p.name||"";$("barcode").value=p.code||"";for(let k of ["carbs","sugars","fat","sat","fiber","salt","protein","trans","novaGroup"])$(k).value=p[k]??"";$("ingredients").value=p.ingredients||"";$("additives").value=p.additives||""}
 $("lookupBtn").onclick=async()=>{let code=$("barcode").value.replace(/\D/g,"");if(!code){alert("Πληκτρολόγησε barcode.");return}let b=$("lookupBtn");b.disabled=true;b.textContent="Αναζήτηση…";try{let res=await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`);if(!res.ok)throw 0;let d=await res.json();if(d.status!==1)throw 1;let x=d.product,n=x.nutriments||{};let p={code,name:x.product_name_el||x.product_name||x.generic_name||"Άγνωστο προϊόν",carbs:val(n.carbohydrates_100g),sugars:val(n.sugars_100g),fat:val(n.fat_100g),sat:val(n["saturated-fat_100g"]),fiber:val(n.fiber_100g),salt:val(n.salt_100g),protein:val(n.proteins_100g),ingredients:x.ingredients_text_el||x.ingredients_text||"",novaGroup:val(x.nova_group),additives:(x.additives_tags||[]).map(t=>t.replace(/^en:/,"" )).join(", "),trans:val(n["trans-fat_100g"])};fillProduct(p);showProduct(p)}catch(e){alert(e===1?"Δεν βρέθηκε το προϊόν.":"Αποτυχία σύνδεσης με τη βάση. Δοκίμασε ξανά ή κάνε χειροκίνητη καταχώριση.")}finally{b.disabled=false;b.textContent="Αναζήτηση προϊόντος"}};
