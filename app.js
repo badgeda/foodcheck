@@ -31,6 +31,44 @@ const val=(v)=>typeof v==="number"&&Number.isFinite(v)&&v>=0?v:null;
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function tab(name){document.querySelectorAll("main>section").forEach(s=>s.classList.toggle("hidden",s.id!=="tab-"+name));document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===name))}
 document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+function checkProductValues(p){
+ const warnings={};
+ const valid=v=>v!==null&&v!==undefined&&Number.isFinite(Number(v))&&Number(v)>=0;
+ const mark=(field,message)=>warnings[field]=message;
+
+ for(const field of ["carbs","sugars","fat","sat","fiber","salt","protein","trans"]){
+  if(valid(p[field])&&Number(p[field])>100){
+   mark(field,"Η τιμή υπερβαίνει τα 100 g ανά 100 g προϊόντος.");
+  }
+ }
+
+ if(valid(p.sugars)&&valid(p.carbs)&&Number(p.sugars)>Number(p.carbs)+0.1)
+  mark("sugars","Τα σάκχαρα υπερβαίνουν τους συνολικούς υδατάνθρακες.");
+
+ if(valid(p.sat)&&valid(p.fat)&&Number(p.sat)>Number(p.fat)+0.1)
+  mark("sat","Τα κορεσμένα λιπαρά υπερβαίνουν τα συνολικά λιπαρά.");
+
+ if(valid(p.trans)&&valid(p.fat)&&Number(p.trans)>Number(p.fat)+0.1)
+  mark("trans","Τα trans λιπαρά υπερβαίνουν τα συνολικά λιπαρά.");
+
+ if(p.novaGroup!=null&&p.novaGroup!==""){
+  const n=Number(p.novaGroup);
+  if(!Number.isInteger(n)||n<1||n>4)
+   mark("novaGroup","Μη έγκυρη κατηγορία NOVA. Επιτρεπτές τιμές: 1 έως 4.");
+ }
+
+ const identity=(String(p.name||"")+" "+String(p.ingredients||"")).toLocaleLowerCase("el");
+ const isWater=/\b(eau|water|aqua|vittel|evian|perrier|san pellegrino)\b|νερ(ό|ου|α)/i.test(identity);
+
+ if(isWater){
+  for(const field of ["carbs","sugars","fat","sat","fiber","protein","trans"]){
+   if(valid(p[field])&&Number(p[field])>0.1)
+    mark(field,"Ασυνήθιστη τιμή για προϊόν που αναγνωρίζεται ως νερό. Χρειάζεται επιβεβαίωση.");
+  }
+ }
+
+ return warnings;
+}
 function assess(p,portion=100){
  const valid=v=>v!=null&&Number.isFinite(Number(v))&&Number(v)>=0;
  const per=(v)=>valid(v)?Number(v)*portion/100:null;
