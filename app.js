@@ -65,7 +65,8 @@ function assess(p,portion=100){
  if(explicitTrans){quality-=20;qualityReasons.push('Εντοπίστηκαν trans λιπαρά ή μερικώς υδρογονωμένα λιπαρά.')}
  if(/σιρόπι γλυκόζης|σιρόπι φρουκτόζης|glucose syrup|fructose syrup/.test(ing)){quality-=5;qualityReasons.push('Περιλαμβάνει σιρόπι πρόσθετων σακχάρων.')}
  quality=clamp(quality);
- if(!p.ingredients&&!p.novaGroup&&!valid(p.trans)){quality=Math.min(quality,69);qualityReasons.push('Δεν υπάρχουν πλήρη στοιχεία συστατικών/επεξεργασίας· η βαθμολογία περιορίζεται προσωρινά λόγω ελλιπών δεδομένων.');}
+ // Τα ελλιπή/άγνωστα στοιχεία δεν αποτελούν από μόνα τους αρνητικό χαρακτηριστικό
+ // και δεν μειώνουν τη βαθμολογία. Αφαιρούνται μονάδες μόνο για τεκμηριωμένους παράγοντες.
  const known=[p.carbs,p.sugars,p.sat,p.salt,p.fiber,p.fat,p.protein].filter(valid).length;
  const confidence=known>=6?'Καλή':known>=4?'Μέτρια':'Χαμηλή';
  const portionProtein=per(p.protein);
