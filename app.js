@@ -192,7 +192,7 @@ function resultHTML(p,portion,r){
 
  return `<div class="result ${r.level}">
  <div class="scoreline"><div class="score">${scoreText}</div><div><b>${qualityLabel}</b><br><span class="pill">Ποιότητα δεδομένων: ${r.confidence}</span></div></div>
- ${r.forbiddenReasons?.length?'<div style="background:#ffebee;border:2px solid #c62828;color:#b71c1c;padding:12px;margin:12px 0;border-radius:8px;font-size:20px;font-weight:900;text-align:center;">⛔ ΑΠΑΓΟΡΕΥΜΕΝΟ</div><ul style="color:#b71c1c;font-weight:700;">'+r.forbiddenReasons.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>":""}
+ ${r.forbiddenReasons?.length?'<div style="background:#ffebee;border:2px solid #c62828;color:#b71c1c;padding:12px;margin:12px 0;border-radius:8px;font-size:20px;font-weight:900;text-align:center;">⛔ ΑΚΑΤΑΛΛΗΛΟ ΠΡΟΣ ΚΑΤΑΝΑΛΩΣΗ</div><ul style="color:#b71c1c;font-weight:700;">'+r.forbiddenReasons.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>":""}
  <div class="meter"><span style="width:${r.score??0}%"></span></div><b>${esc(p.name||"Τρόφιμο")}</b>
  <h3>Ποιότητα προϊόντος</h3>
  <p>Η βαθμολογία ξεκινά από 100 και αφαιρεί μονάδες για συγκεκριμένα αρνητικά χαρακτηριστικά. Δεν προστίθενται μονάδες για πρωτεΐνη ή ίνες.</p>
