@@ -291,7 +291,7 @@ $("scanBtn").onclick=async()=>{
 
     const code=result.getText().replace(/[^0-9]/g,"");
 
-    if(!/^\d{13}$/.test(code))return;
+    if(!/^(?:\d{8}|\d{12,13})$/.test(code))return;
 
     handled=true;
     $("barcode").value=code;
@@ -487,7 +487,7 @@ function mealPayload(){
    ?recipeNutrition.carbs*actualWeight/totalRecipeWeight
    :plannedCarbs;
  }
- return {id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),name:$("mealName").value.trim()||"Γεύμα",date:new Date().toLocaleString("el-GR"),mode:mealMode,preGlucose:num("preGlucose"),preTime:$("preTime").value,trend:$("trend").value,items,estimatedWeight:isUnknown?portionWeight:items.reduce((a,x)=>a+(recipeWeight(x)||0),0)||null,method:isUnknown?$("unknownNotes").value:$("method").value,recipeItems:isUnknown?[]:recipeItems.map(x=>({...x,weight:recipeWeight(x)})),recipeNutrition,recipeTotalPortions:totalPortions,recipeConsumedPortions:consumedPortions,consumedMealWeight:isUnknown?portionWeight:num("actualMealWeight"),unknownIngredients:isUnknown?[...unknownIngredients]:[],unknownVessel:isUnknown?$("unknownVessel").value:"",unknownProfile:profile?.label||null,estimateType:isUnknown?(profile?"τυπικό προφίλ – προσεγγιστική εκτίμηση":"ανεπαρκή στοιχεία"): "υπολογισμός από υλικά συνταγής",photos:[],rapidDose:num("rapidDose"),rapidTime:$("rapidTime").value,plannedCarbs,consumedCarbs,totalCarbs:plannedCarbs,carbDataCount:plannedCarbs==null?0:1,consumedCarbDataCount:consumedCarbs==null?0:1,score,impact,post:[]};
+ return {id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),name:$("mealName").value.trim()||"Γεύμα",date:new Date().toLocaleString("el-GR"),mode:mealMode,preGlucose:num("preGlucose"),preTime:$("preTime").value,trend:$("trend").value,items,estimatedWeight:isUnknown?portionWeight:(recipeItems.length&&recipeItems.every(x=>recipeWeight(x)!=null)?recipeItems.reduce((a,x)=>a+recipeWeight(x),0):null),method:isUnknown?$("unknownNotes").value:$("method").value,recipeItems:isUnknown?[]:recipeItems.map(x=>({...x,weight:recipeWeight(x)})),recipeNutrition,recipeTotalPortions:totalPortions,recipeConsumedPortions:consumedPortions,consumedMealWeight:isUnknown?portionWeight:num("actualMealWeight"),unknownIngredients:isUnknown?[...unknownIngredients]:[],unknownVessel:isUnknown?$("unknownVessel").value:"",unknownProfile:profile?.label||null,estimateType:isUnknown?(profile?"τυπικό προφίλ – προσεγγιστική εκτίμηση":"ανεπαρκή στοιχεία"): "υπολογισμός από υλικά συνταγής",photos:[],rapidDose:num("rapidDose"),rapidTime:$("rapidTime").value,plannedCarbs,consumedCarbs,totalCarbs:plannedCarbs,carbDataCount:plannedCarbs==null?0:1,consumedCarbDataCount:consumedCarbs==null?0:1,score,impact,post:[]};
 }
 function recipeNutritionHTML(m){
  const n=m.recipeNutrition;if(!n)return "";
