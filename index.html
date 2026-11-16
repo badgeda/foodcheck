@@ -127,6 +127,10 @@ footer{max-width:850px;margin:auto;padding:0 16px 25px;color:#65736c;font-size:.
 <h3>Ταχεία ινσουλίνη που πραγματικά χορηγήθηκε</h3>
 <div class="grid"><div><label for="rapidDose">Πραγματική δόση (μονάδες)</label><input id="rapidDose" type="number" min="0" step=".5"></div><div><label for="rapidTime">Ώρα χορήγησης</label><input id="rapidTime" type="time"></div></div>
 <p class="muted">Καταγράφεται μόνο η δόση που δηλώνεις ότι χορηγήθηκε. Το FoodCheck δεν υπολογίζει ούτε προτείνει δόση ινσουλίνης.</p>
+<div id="legacyMealControls" class="hidden" aria-hidden="true">
+<select id="foodItemType"><option>Κυρίως πιάτο</option><option>Συνοδευτικό</option><option>Σαλάτα</option><option>Ψωμί</option><option>Τυρί</option><option>Πρόσθετα / σάλτσες</option><option>Γλυκό</option><option>Ποτό</option></select>
+<input id="foodItemName"><div id="foodSuggestions"></div><input id="itemWeight"><input id="itemConsumedWeight"><select id="itemVessel"><option value=""></option></select><input id="itemVesselDiameter"><input id="itemCarbs"><input id="itemSugars"><input id="itemSat"><input id="itemFiber"><input id="itemSalt"><button type="button" id="addFood"></button><div id="mealItems"></div>
+</div>
 <div class="actions"><button class="primary" id="analyzeMeal">Αξιολόγηση και αποθήκευση γεύματος</button><button class="secondary" id="saveMealTemplate">Αποθήκευση στη βιβλιοθήκη</button><button class="secondary" id="newMeal">Νέα καταχώριση γεύματος</button></div>
 <div id="mealResult"></div>
 </div>
