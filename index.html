@@ -50,17 +50,19 @@ footer{max-width:850px;margin:auto;padding:0 16px 25px;color:#65736c;font-size:.
 <label for="barcode">Barcode</label><input id="barcode" inputmode="numeric" placeholder="Πληκτρολόγησε barcode">
 <div class="actions"><button class="primary" id="lookupBtn">Αναζήτηση προϊόντος</button><button class="secondary" id="scanBtn">Σάρωση κάμερας</button></div>
 <div id="scanner" class="hidden" style="margin-top:10px"></div>
-<p class="muted">Η βάση Open Food Facts μπορεί να έχει ελλιπή ή λανθασμένα στοιχεία. Έλεγξε πάντα την ετικέτα.</p>
+<p class="muted">Η βάση Open Food Facts μπορεί να έχει ελλιπή ή λανθασμένα στοιχεία. Έλεγξε πάντα την ετικέτα. Η γενική βαθμολογία βασίζεται στον Nutri-Score 2023 για γενικά τρόφιμα· ειδικές κατηγορίες χρειάζονται ξεχωριστούς κανόνες.</p>
 </div>
 <div class="panel">
 <h2>Χειροκίνητη καταχώριση / διόρθωση στοιχείων</h2>
 <label for="pname">Ονομασία</label><input id="pname" placeholder="π.χ. ψωμί ολικής άλεσης">
 <div class="grid">
+<div><label for="energyKj">Ενέργεια (kJ/100g)</label><input id="energyKj" type="number" min="0" step="1"></div>
 <div><label for="carbs">Υδατάνθρακες (g/100g)</label><input id="carbs" type="number" min="0" step=".1"></div>
 <div><label for="sugars">Σάκχαρα (g/100g)</label><input id="sugars" type="number" min="0" step=".1"></div>
 <div><label for="fat">Λιπαρά (g/100g)</label><input id="fat" type="number" min="0" step=".1"></div>
 <div><label for="sat">Κορεσμένα (g/100g)</label><input id="sat" type="number" min="0" step=".1"></div>
 <div><label for="fiber">Ίνες (g/100g)</label><input id="fiber" type="number" min="0" step=".1"></div>
+<div><label for="fruitVegPercent">Φρούτα / λαχανικά / όσπρια (%)</label><input id="fruitVegPercent" type="number" min="0" max="100" step="1" placeholder="προαιρετικά"></div>
 <div><label for="salt">Αλάτι (g/100g)</label><input id="salt" type="number" min="0" step=".01"></div>
 <div><label for="protein">Πρωτεΐνη (g/100g)</label><input id="protein" type="number" min="0" step=".1"></div>
 <div><label for="trans">Trans λιπαρά (g/100g)</label><input id="trans" type="number" min="0" step=".01"></div>
@@ -144,8 +146,8 @@ footer{max-width:850px;margin:auto;padding:0 16px 25px;color:#65736c;font-size:.
 </section>
 <section id="tab-backup" class="hidden"><div class="panel"><h2>Αντίγραφο ασφαλείας</h2><p class="muted">Εξαγωγή και επαναφορά ιστορικού, αγαπημένων, βιβλιοθήκης, ημερολογίου και φωτογραφιών. Η επαναφορά αντικαθιστά τα υπάρχοντα δεδομένα αυτής της συσκευής. Φύλαξε πρώτα αντίγραφο.</p><div class="actions"><button class="primary" id="exportBackup">Εξαγωγή αντιγράφου</button><label class="secondary" for="importBackup" style="display:inline-block;padding:10px 14px;border-radius:8px;cursor:pointer">Επαναφορά αντιγράφου</label><input id="importBackup" type="file" accept="application/json,.json" hidden></div><p id="backupFeedback" class="muted"></p></div></section>
 </main>
-<footer><strong>Έκδοση ελέγχου Android 16/11/2026-3</strong><br>Το FoodCheck είναι ενημερωτικό εργαλείο και όχι ιατρική συσκευή ή ιατρική οδηγία. Δεν διαγιγνώσκει, δεν προτείνει δόσεις ινσουλίνης και δεν αντικαθιστά τον γιατρό. Οι φωτογραφίες δεν προσδιορίζουν με ακρίβεια βάρος, λάδι ή κρυφά υλικά· οι εκτιμήσεις χρειάζονται επιβεβαίωση. Τα δεδομένα αποθηκεύονται τοπικά στη συσκευή και δεν συγχρονίζονται αυτόματα.</footer>
+<footer><strong>Έκδοση ελέγχου Android 16/11/2026-4</strong><br>Το FoodCheck είναι ενημερωτικό εργαλείο και όχι ιατρική συσκευή ή ιατρική οδηγία. Δεν διαγιγνώσκει, δεν προτείνει δόσεις ινσουλίνης και δεν αντικαθιστά τον γιατρό. Οι φωτογραφίες δεν προσδιορίζουν με ακρίβεια βάρος, λάδι ή κρυφά υλικά· οι εκτιμήσεις χρειάζονται επιβεβαίωση. Τα δεδομένα αποθηκεύονται τοπικά στη συσκευή και δεν συγχρονίζονται αυτόματα.</footer>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
-<script src="./app.js?v=20261116-3"></script>
+<script src="./app.js?v=20261116-4"></script>
 </body></html>
