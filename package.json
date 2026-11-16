@@ -8,7 +8,9 @@
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
-    "@capacitor/core": "^7.4.3"
+    "@capacitor/core": "^7.4.3",
+    "html5-qrcode": "2.3.8",
+    "@zxing/library": "0.21.3"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3"
