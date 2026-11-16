@@ -127,7 +127,7 @@ function assess(p,portion=100){
 
  const ing=String(data.ingredients||"").toLocaleLowerCase("el");
  const confirmedTrans=valid(data.trans)&&Number(data.trans)>0;
- const ingredientTrans=/trans\\s*fat/.test(ing);
+ const ingredientTrans=/trans\s*fat/.test(ing);
  const partiallyHydrogenated=/μερικώς υδρογονωμέν|partially hydrogenated/.test(ing);
  const explicitTrans=confirmedTrans||ingredientTrans||partiallyHydrogenated;
  const forbiddenReasons=[];
