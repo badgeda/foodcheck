@@ -31,233 +31,168 @@ const val=(v)=>typeof v==="number"&&Number.isFinite(v)&&v>=0?v:null;
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function tab(name){document.querySelectorAll("main>section").forEach(s=>s.classList.toggle("hidden",s.id!=="tab-"+name));document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===name))}
 document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>tab(b.dataset.tab));
-
 function assess(p,portion=100){
- const c=p.carbs,s=p.sugars,sat=p.sat,fi=p.fiber,salt=p.salt,fat=p.fat,protein=p.protein;
-
  const valid=v=>v!=null&&Number.isFinite(Number(v))&&Number(v)>=0;
+ const per=(v)=>valid(v)?Number(v)*portion/100:null;
+ const carbs=per(p.carbs), sugars=per(p.sugars), sat=per(p.sat), trans=per(p.trans);
  const notes=[];
-
- const portionCarbs=valid(c)?c*portion/100:null;
- const portionProtein=valid(protein)?protein*portion/100:null;
-
- // Υδατάνθρακες: αξιολόγηση βάσει πραγματικής μερίδας
- let carbScore=null;
- if(valid(c)){
-  carbScore=
-   portionCarbs<=5?100:
-   portionCarbs<=10?90:
-   portionCarbs<=15?80:
-   portionCarbs<=20?70:
-   portionCarbs<=30?55:
-   portionCarbs<=45?35:15;
-
-  if(portionCarbs>20)
-   notes.push("Αυξημένοι υδατάνθρακες στην επιλεγμένη μερίδα.");
+ // Τρεις ανεξάρτητες ενδείξεις επιβάρυνσης (0=πράσινο, 100=κόκκινο).
+ const clamp=n=>Math.max(0,Math.min(100,Math.round(n)));
+ const band=(n)=>n<=33?'Χαμηλή':n<=66?'Μέτρια':'Υψηλή';
+ const diabetes=carbs==null?null:clamp(carbs<=5?5:carbs<=10?15:carbs<=15?28:carbs<=20?42:carbs<=30?60:carbs<=45?80:95);
+ // Τα σάκχαρα συμμετέχουν εδώ ως μέρος της συνολικής ποσότητας, όχι ως δεύτερη ποινή.
+ let triglycerides=null;
+ if(carbs!=null){let t=carbs<=10?8:carbs<=20?22:carbs<=30?40:carbs<=45?60:82;
+  if(valid(sugars))t+=Math.min(18,sugars*0.9);
+  if(Number(p.novaGroup)>=3)t+=8;
+  triglycerides=clamp(t);
  }
-
- // Σάκχαρα: αξιολόγηση ανά 100 g
- let sugarScore=null;
- if(valid(s)){
-  sugarScore=
-   s<=5?100:
-   s<=22.5?65:25;
-
-  if(s>22.5)
-   notes.push("Υψηλά σάκχαρα ανά 100 g.");
-  else if(s>5)
-   notes.push("Μέτρια προς αυξημένη ποσότητα σακχάρων ανά 100 g.");
- }
-
- // Συνολική αξιολόγηση διαβήτη
- const diabetesParts=[
-  {score:carbScore,weight:80},
-  {score:sugarScore,weight:20}
- ].filter(x=>x.score!=null);
-
- const diabetesWeight=diabetesParts.reduce((a,x)=>a+x.weight,0);
-
- const diabetesScore=diabetesWeight?
-  Math.round(diabetesParts.reduce((a,x)=>a+x.score*x.weight,0)/diabetesWeight):null;
-
- // Κορεσμένα λιπαρά
- let satScore=null;
- if(valid(sat)){
-  satScore=
-   sat<=1.5?100:
-   sat<=5?65:25;
-
-  if(sat>5)
-   notes.push("Υψηλά κορεσμένα λιπαρά.");
-  else if(sat>1.5)
-   notes.push("Μέτρια προς αυξημένα κορεσμένα λιπαρά.");
- }
-
- // Αλάτι
- let saltScore=null;
- if(valid(salt)){
-  saltScore=
-   salt<=0.3?100:
-   salt<=1.5?60:20;
-
-  if(salt>1.5)
-   notes.push("Υψηλή περιεκτικότητα σε αλάτι.");
-  else if(salt>0.3)
-   notes.push("Αξιόλογη ποσότητα αλατιού.");
- }
-
- // Αξιολόγηση λιπιδίων και αλατιού
- const lipidParts=[
-  {score:satScore,weight:70},
-  {score:saltScore,weight:30}
- ].filter(x=>x.score!=null);
-
- const lipidWeight=lipidParts.reduce((a,x)=>a+x.weight,0);
-
- const lipidScore=lipidWeight?
-  Math.round(lipidParts.reduce((a,x)=>a+x.score*x.weight,0)/lipidWeight):null;
-
- // Τα συνολικά λιπαρά δεν τιμωρούνται αυτόματα
- if(valid(fat)&&fat>17.5&&valid(sat)&&sat<=1.5){
-  notes.push("Υψηλά συνολικά λιπαρά, αλλά σχετικά χαμηλά κορεσμένα. Έχει σημασία η πηγή τους.");
- }
-
- // Θετικά στοιχεία: ενημέρωση χωρίς προσθήκη βαθμών
- if(valid(fi)&&fi>=3)
-  notes.push("Οι φυτικές ίνες είναι θετικό διατροφικό στοιχείο, χωρίς να αυξάνουν τη βαθμολογία.");
-
- if(valid(protein)&&portionProtein>=10)
-  notes.push("Καλή ποσότητα πρωτεΐνης στην επιλεγμένη μερίδα, χωρίς να αυξάνει τη βαθμολογία.");
-
- // Συνολική βαθμολογία αποκλειστικά από αρνητικούς παράγοντες
- const parts=[
-  {score:diabetesScore,weight:55},
-  {score:lipidScore,weight:45}
- ].filter(x=>x.score!=null);
-
- const totalWeight=parts.reduce((a,x)=>a+x.weight,0);
-
- let score=totalWeight?
-  Math.round(parts.reduce((a,x)=>a+x.score*x.weight,0)/totalWeight):null;
-
- // Πληρότητα δεδομένων
- const fields=[c,s,sat,salt,fi,fat,protein];
- const known=fields.filter(valid).length;
-
- const criticalMissing=!valid(c)||!valid(sat)||!valid(salt);
-
- const confidence=
-  known>=6&&!criticalMissing?"Καλή":
-  known>=4?"Μέτρια":"Χαμηλή";
-
- // Περιορισμός βαθμολογίας όταν λείπουν βασικά στοιχεία
- if(score!=null&&criticalMissing)
-  score=Math.min(score,69);
-
- if(score!=null&&known<4)
-  score=Math.min(score,59);
-
- // Ενημέρωση για ελλείψεις
- if(!valid(c))
-  notes.push("Δεν υπάρχουν στοιχεία υδατανθράκων.");
-
- if(!valid(s))
-  notes.push("Δεν υπάρχουν στοιχεία σακχάρων.");
-
- if(!valid(sat))
-  notes.push("Δεν υπάρχουν στοιχεία κορεσμένων λιπαρών.");
-
- if(!valid(salt))
-  notes.push("Δεν υπάρχουν στοιχεία αλατιού.");
-
- if(!valid(protein))
-  notes.push("Δεν υπάρχουν στοιχεία πρωτεϊνών.");
-
- const level=
-  score==null?"risk-high":
-  score>=75?"risk-low":
-  score>=50?"risk-mid":"risk-high";
-
- return {
-  score,
-  level,
-  confidence,
-  notes,
-  portionCarbs,
-  portionProtein,
-  known,
-  diabetesScore,
-  lipidScore,
-  proteinScore:null
- };
+ const cholesterol=sat==null?null:clamp(sat<=1?5:sat<=2?18:sat<=3?32:sat<=5?52:sat<=7?72:90);
+ if(diabetes!=null&&diabetes>=67)notes.push('Αυξημένοι συνολικοί υδατάνθρακες στη μερίδα.');
+ if(triglycerides!=null&&triglycerides>=67)notes.push('Αυξημένη επιβάρυνση από υδατάνθρακες/σάκχαρα στη μερίδα.');
+ if(cholesterol!=null&&cholesterol>=67)notes.push('Υψηλή ποσότητα κορεσμένων λιπαρών στη μερίδα.');
+ if(valid(p.fiber)&&per(p.fiber)>=3)notes.push('Οι φυτικές ίνες είναι θετικό στοιχείο, αλλά δεν αφαιρούν τεχνητά την επιβάρυνση.');
+ if(valid(p.protein)&&per(p.protein)>=10)notes.push('Καλή ποσότητα πρωτεΐνης στη μερίδα.');
+ if(valid(p.salt)&&p.salt>1.5)notes.push('Υψηλή περιεκτικότητα σε αλάτι ανά 100 g.');
+ // Ποιότητα προϊόντος: ξεχωριστή από τις τρεις μπάρες. Δεν δίνεται bonus για θρεπτικά.
+ // NOVA και σαφώς δηλωμένα ανεπιθύμητα συστατικά επιφέρουν περιορισμένες αφαιρέσεις.
+ let quality=100, qualityReasons=[];
+ const nova=Number(p.novaGroup);
+ if(nova===4){quality-=15;qualityReasons.push('NOVA 4: υπερεπεξεργασμένο προϊόν (ενδεικτική αφαίρεση 15 μονάδων).')}
+ else if(nova===3){quality-=6;qualityReasons.push('NOVA 3: επεξεργασμένο προϊόν (ενδεικτική αφαίρεση 6 μονάδων).')}
+ const ing=String(p.ingredients||'').toLocaleLowerCase('el');
+ const explicitTrans=valid(p.trans)&&Number(p.trans)>0 || /μερικώς υδρογονωμέν|partially hydrogenated|trans\s*fat/.test(ing);
+ if(explicitTrans){quality-=20;qualityReasons.push('Εντοπίστηκαν trans λιπαρά ή μερικώς υδρογονωμένα λιπαρά.')}
+ if(/σιρόπι γλυκόζης|σιρόπι φρουκτόζης|glucose syrup|fructose syrup/.test(ing)){quality-=5;qualityReasons.push('Περιλαμβάνει σιρόπι πρόσθετων σακχάρων.')}
+ quality=clamp(quality);
+ if(!p.ingredients&&!p.novaGroup&&!valid(p.trans)){quality=Math.min(quality,69);qualityReasons.push('Δεν υπάρχουν πλήρη στοιχεία συστατικών/επεξεργασίας· η βαθμολογία περιορίζεται προσωρινά λόγω ελλιπών δεδομένων.');}
+ const known=[p.carbs,p.sugars,p.sat,p.salt,p.fiber,p.fat,p.protein].filter(valid).length;
+ const confidence=known>=6?'Καλή':known>=4?'Μέτρια':'Χαμηλή';
+ const portionProtein=per(p.protein);
+ if(!valid(p.carbs))notes.push('Δεν υπάρχουν στοιχεία υδατανθράκων.');
+ if(!valid(p.sat))notes.push('Δεν υπάρχουν στοιχεία κορεσμένων λιπαρών.');
+ return {score:quality,level:quality>=75?'risk-low':quality>=50?'risk-mid':'risk-high',confidence,notes,portionCarbs:carbs,portionProtein,known,diabetesScore:diabetes,triglyceridesScore:triglycerides,cholesterolScore:cholesterol,qualityReasons};
+}
+function barHTML(label,value,reason){
+ if(value==null)return `<div class="impact"><div class="impact-head"><b>${label}</b><span>Ανεπαρκή δεδομένα</span></div><div class="impact-track unavailable"></div><p class="muted">Δεν υπάρχουν αρκετά στοιχεία για αξιόπιστη ένδειξη.</p></div>`;
+ const color=value<=33?'#279653':value<=66?'#e5ad27':'#d94747';
+ return `<div class="impact"><div class="impact-head"><b>${label}</b><span>${value}/100 · ${value<=33?'Χαμηλή':value<=66?'Μέτρια':'Υψηλή'} επιβάρυνση</span></div><div class="impact-track"><span class="impact-marker" style="left:${value}%;--marker-color:${color}"></span></div><p class="muted">${reason}</p></div>`;
+}
+function resultHTML(p,portion,r){
+ const scoreText=r.score==null?'Δεν υπολογίστηκε':r.score+'/100';
+ const qualityLabel=r.score==null?'Ανεπαρκή στοιχεία':r.score>=85?'Πολύ καλή ποιότητα':r.score>=70?'Καλή ποιότητα':r.score>=50?'Μέτρια ποιότητα':'Χαμηλή ποιότητα';
+ return `<div class="result ${r.level}"><div class="scoreline"><div class="score">${scoreText}</div><div><b>${qualityLabel}</b><br><span class="pill">Ποιότητα δεδομένων: ${r.confidence}</span></div></div>
+ <div class="meter"><span style="width:${r.score??0}%"></span></div><b>${esc(p.name||'Τρόφιμο')}</b>
+ <h3>Ποιότητα προϊόντος</h3><p>Η βαθμολογία ξεκινά από 100 και αφαιρεί μονάδες για συγκεκριμένα αρνητικά χαρακτηριστικά. Δεν προστίθενται μονάδες για πρωτεΐνη ή ίνες.</p>
+ ${r.qualityReasons?.length?'<ul>'+r.qualityReasons.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'<p class="muted">Δεν εντοπίστηκε καταχωρισμένος παράγοντας αφαίρεσης.</p>'}
+ <h3>Επιβάρυνση στη μερίδα των ${portion} g</h3>
+ ${barHTML('Διαβήτης',r.diabetesScore,`Συνολικοί υδατάνθρακες: ${r.portionCarbs==null?'—':r.portionCarbs.toFixed(1)+' g'} στη μερίδα.`)}
+ ${barHTML('Τριγλυκερίδια',r.triglyceridesScore,'Συνεκτιμώνται οι υδατάνθρακες, τα σάκχαρα και η ένδειξη επεξεργασίας όπου είναι γνωστή.')}
+ ${barHTML('Χοληστερίνη',r.cholesterolScore,`Κορεσμένα λιπαρά: ${p.sat==null?'—':(p.sat*portion/100).toFixed(1)+' g'} στη μερίδα.`)}
+ <h3>Διατροφικά στοιχεία ανά 100 g</h3><p>Υδατάνθρακες: ${p.carbs??'—'} g · Σάκχαρα: ${p.sugars??'—'} g · Πρωτεΐνες: ${p.protein??'—'} g.</p><p>Συνολικά λιπαρά: ${p.fat??'—'} g · Κορεσμένα: ${p.sat??'—'} g · Ίνες: ${p.fiber??'—'} g · Αλάτι: ${p.salt??'—'} g.</p>
+ <h3>Συστατικά και επεξεργασία</h3><p>${esc(p.ingredients||'Δεν καταχωρίστηκε λίστα συστατικών.')}</p><p>Κατηγορία NOVA: ${p.novaGroup||'Άγνωστη'} · Πρόσθετα: ${esc(p.additives||'Δεν υπάρχουν διαθέσιμα στοιχεία.')}</p>
+ ${r.notes.length?'<b>Παρατηρήσεις</b><ul>'+r.notes.map(n=>'<li>'+esc(n)+'</li>').join('')+'</ul>':''}
+ <p class="muted">Οι μπάρες είναι ενδεικτικές διατροφικές ενδείξεις και όχι ιατρική οδηγία. Τα πρόσθετα Ε δεν τιμωρούνται αυτομάτως: απαιτείται αξιολόγηση της συγκεκριμένης ουσίας και της χρήσης της.</p></div>`;
 }
 
 function assessMeal(p,portion=100){
- const c=p.carbs,s=p.sugars,sat=p.sat,fi=p.fiber,salt=p.salt;
- let risk=0,notes=[],known=0;
- if(c!=null){known++;if(c>=60){risk+=30;notes.push("Υψηλή ποσότητα υδατανθράκων ανά 100 g.")}else if(c>=40){risk+=22;notes.push("Αρκετοί υδατάνθρακες ανά 100 g.")}else if(c>=25){risk+=14;notes.push("Μέτρια προς αυξημένη ποσότητα υδατανθράκων.")}else risk+=5}
- if(s!=null){known++;if(s>=15){risk+=18;notes.push("Υψηλά σάκχαρα.")}else if(s>=5){risk+=10;notes.push("Αξιόλογη ποσότητα σακχάρων.")}else risk+=2}
- if(sat!=null){known++;if(sat>=5){risk+=17;notes.push("Υψηλά κορεσμένα λιπαρά.")}else if(sat>=2){risk+=10;notes.push("Μέτρια προς αυξημένα κορεσμένα λιπαρά.")}else risk+=2}
- if(salt!=null){known++;if(salt>=1.5){risk+=12;notes.push("Υψηλό αλάτι.")}else if(salt>=.3){risk+=6;notes.push("Αξιόλογη ποσότητα αλατιού.")}else risk+=1}
- if(fi!=null){known++;if(fi>=6){risk-=9;notes.push("Οι φυτικές ίνες είναι θετικό στοιχείο.")}else if(fi>=3){risk-=4}}
- if(p.fat!=null){known++;if(p.fat>=20&&sat!=null&&sat<2)notes.push("Υπάρχουν αρκετά συνολικά λιπαρά· αξιολόγησε την πηγή τους.")}
- risk=Math.max(0,Math.min(100,risk));
- let score=100-risk;
- let confidence=known>=5?"Καλή":known>=3?"Μέτρια":"Χαμηλή";
- let level=score>=75?"risk-low":score>=50?"risk-mid":"risk-high";
- let portionCarbs=c==null?null:c*portion/100;
- return {score,level,confidence,notes,portionCarbs,known};
+ const c=p.carbs;
+ if(c==null)return {score:null};
+ const portionCarbs=Number(c)*portion/100;
+ // Προσωρινή ένδειξη γεύματος: βασίζεται μόνο στους γνωστούς υδατάνθρακες.
+ // Δεν παρουσιάζεται ως συνολική ποιότητα όταν λείπουν τα υπόλοιπα στοιχεία.
+ return {score:Math.max(0,Math.min(69,Math.round(100-(portionCarbs*1.2))))};
 }
-
-function resultHTML(p,portion,r){
- const scoreText=r.score==null?"Δεν υπολογίστηκε":r.score+"/100";
- const riskText=r.score==null?"Ανεπαρκή διατροφικά στοιχεία":r.score>=75?"Καλύτερη διατροφική εικόνα":r.score>=50?"Μέτρια διατροφική εικόνα – χρειάζεται προσοχή":"Χαμηλή διατροφική εικόνα – αυξημένη προσοχή";
- const subScore=v=>v==null?"Δεν αξιολογήθηκε":v+"/100";
-
- const ingredients=(p.ingredients||"").trim();
- const additives=Array.isArray(p.additives)?p.additives:[];
- const allergens=Array.isArray(p.allergens)?p.allergens:[];
-
- const cleanTags=arr=>arr.map(x=>
-  String(x).replace(/^[a-z]{2,3}:/i,"").toUpperCase()
- );
-
- return `<div class="result ${r.level}">
- <div class="scoreline">
-  <div class="score">${scoreText}</div>
-  <div><b>${riskText}</b><br><span class="pill">Ποιότητα δεδομένων: ${r.confidence}</span></div>
- </div>
-
- ${r.score==null?"":`<div class="meter"><span style="width:${r.score}%"></span></div>`}
-
- <b>${esc(p.name||"Τρόφιμο")}</b>
-
- <h3>Διατροφικά στοιχεία ανά 100 g</h3>
- <p>Υδατάνθρακες: ${p.carbs??"—"} g · Σάκχαρα: ${p.sugars??"—"} g · Πρωτεΐνες: ${p.protein??"—"} g.</p>
- <p>Συνολικά λιπαρά: ${p.fat??"—"} g · Κορεσμένα: ${p.sat??"—"} g · Φυτικές ίνες: ${p.fiber??"—"} g · Αλάτι: ${p.salt??"—"} g.</p>
-
- <h3>Ατομική αξιολόγηση</h3>
- <p><b>Διαβήτης:</b> ${subScore(r.diabetesScore)}</p>
- <p><b>Τριγλυκερίδια / χοληστερόλη και αλάτι:</b> ${subScore(r.lipidScore)}</p>
- <p><b>Πρωτεΐνες:</b> ${subScore(r.proteinScore)}</p>
-
- <h3>Στη μερίδα των ${portion} g</h3>
- <p>Υδατάνθρακες: ${r.portionCarbs==null?"Δεν υπολογίζονται":r.portionCarbs.toFixed(1)+" g"} · Πρωτεΐνες: ${r.portionProtein==null?"Δεν υπολογίζονται":r.portionProtein.toFixed(1)+" g"}.</p>
-
- ${r.notes.length?"<b>Παρατηρήσεις</b><ul>"+r.notes.map(n=>"<li>"+esc(n)+"</li>").join("")+"</ul>":""}
-
- <h3>Συστατικά προϊόντος</h3>
- ${ingredients?`<p>${esc(ingredients)}</p>`:"<p class='muted'>Δεν υπάρχουν διαθέσιμα στοιχεία συστατικών.</p>"}
-
- <h3>Πρόσθετα (Ε)</h3>
- ${additives.length?"<p>"+cleanTags(additives).map(x=>esc(x)).join(", ")+"</p><p class='muted'>Η αναφορά ενός πρόσθετου δεν σημαίνει από μόνη της ότι είναι επικίνδυνο. Χρειάζεται αξιολόγηση του συγκεκριμένου πρόσθετου και της χρήσης του.</p>":"<p class='muted'>Δεν υπάρχουν καταχωρισμένα στοιχεία πρόσθετων.</p>"}
-
- <h3>Αλλεργιογόνα</h3>
- ${allergens.length?"<p>"+cleanTags(allergens).map(x=>esc(x)).join(", ")+"</p>":"<p class='muted'>Δεν υπάρχουν καταχωρισμένα στοιχεία αλλεργιογόνων.</p>"}
-
- <p class="muted">Η βαθμολογία είναι ενδεικτική, βασίζεται στα διαθέσιμα στοιχεία και δεν αποτελεί ιατρική αξιολόγηση.</p>
- </div>`;
+function currentProduct(){return {name:$("pname").value.trim()||"Χειροκίνητο προϊόν",code:$("barcode").value.trim(),carbs:num("carbs"),sugars:num("sugars"),fat:num("fat"),sat:num("sat"),fiber:num("fiber"),salt:num("salt"),protein:num("protein"),ingredients:$("ingredients").value.trim(),novaGroup:num("novaGroup"),additives:$("additives").value.trim(),trans:num("trans")}}
+function showProduct(p,saveHistory=true){lastProduct=p;let portion=num("portion")||50,r=assess(p,portion);$("productResult").innerHTML=resultHTML(p,portion,r);if(saveHistory){history.unshift({name:p.name,portion,date:new Date().toLocaleString("el-GR"),product:p,score:r.score});history=history.slice(0,40);save();drawProductLists()}}
+$("rateProduct").onclick=()=>{let p=currentProduct();if(Object.values(p).filter(v=>typeof v==="number").length===0){alert("Συμπλήρωσε τουλάχιστον ένα διατροφικό στοιχείο.");return}showProduct(p)};
+$("saveFav").onclick=()=>{let p=lastProduct||currentProduct();if(!p.name){alert("Πρώτα αξιολόγησε ή συμπλήρωσε ένα προϊόν.");return}if(!favorites.some(x=>x.code===p.code&&x.name===p.name)){favorites.unshift(p);save();drawProductLists()}};
+function drawProductLists(){
+ $("productHistory").innerHTML=history.length?history.map((h,i)=>`<div class="item"><b>${esc(h.name)}</b> <span class="pill">${esc(h.date||"")}</span><br><span class="muted">Μερίδα ${h.portion||"—"} g · Βαθμολογία ${h.score??"—"}/100</span> <button class="secondary small" data-h="${i}">Προβολή</button></div>`).join(""):"Δεν υπάρχουν καταχωρίσεις.";
+ $("productHistory").querySelectorAll("[data-h]").forEach(b=>b.onclick=()=>{let p=history[+b.dataset.h].product;fillProduct(p);showProduct(p,false)});
+ $("productFavorites").innerHTML=favorites.length?favorites.map((p,i)=>`<div class="item"><b>${esc(p.name)}</b> <button class="secondary small" data-f="${i}">Έλεγχος</button> <button class="danger small" data-r="${i}">Αφαίρεση</button></div>`).join(""):"Δεν υπάρχουν αγαπημένα.";
+ $("productFavorites").querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{let p=favorites[+b.dataset.f];fillProduct(p);showProduct(p,false)});
+ $("productFavorites").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{favorites.splice(+b.dataset.r,1);save();drawProductLists()});
 }
+function fillProduct(p){$("pname").value=p.name||"";$("barcode").value=p.code||"";for(let k of ["carbs","sugars","fat","sat","fiber","salt","protein","trans","novaGroup"])$(k).value=p[k]??"";$("ingredients").value=p.ingredients||"";$("additives").value=p.additives||""}
+$("lookupBtn").onclick=async()=>{let code=$("barcode").value.replace(/\D/g,"");if(!code){alert("Πληκτρολόγησε barcode.");return}let b=$("lookupBtn");b.disabled=true;b.textContent="Αναζήτηση…";try{let res=await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`);if(!res.ok)throw 0;let d=await res.json();if(d.status!==1)throw 1;let x=d.product,n=x.nutriments||{};let p={code,name:x.product_name_el||x.product_name||x.generic_name||"Άγνωστο προϊόν",carbs:val(n.carbohydrates_100g),sugars:val(n.sugars_100g),fat:val(n.fat_100g),sat:val(n["saturated-fat_100g"]),fiber:val(n.fiber_100g),salt:val(n.salt_100g),protein:val(n.proteins_100g),ingredients:x.ingredients_text_el||x.ingredients_text||"",novaGroup:val(x.nova_group),additives:(x.additives_tags||[]).map(t=>t.replace(/^en:/,"" )).join(", "),trans:val(n["trans-fat_100g"])};fillProduct(p);showProduct(p)}catch(e){alert(e===1?"Δεν βρέθηκε το προϊόν.":"Αποτυχία σύνδεσης με τη βάση. Δοκίμασε ξανά ή κάνε χειροκίνητη καταχώριση.")}finally{b.disabled=false;b.textContent="Αναζήτηση προϊόντος"}};
+
+
+$("scanBtn").onclick=async()=>{
+ if(!window.ZXing||!ZXing.BrowserMultiFormatReader){
+  alert("Δεν φορτώθηκε η νέα βιβλιοθήκη σάρωσης. Έλεγξε τη σύνδεση στο διαδίκτυο.");
+  return;
+ }
+
+ const box=$("scanner");
+
+ if(scanner){
+  try{scanner.reset()}catch{}
+  scanner=null;
+  box.classList.add("hidden");
+  box.innerHTML="";
+  return;
+ }
+
+ box.classList.remove("hidden");
+
+ box.innerHTML=`
+  <video id="foodcheck-video"
+   style="width:100%;max-height:60vh;object-fit:contain;background:#000"
+   autoplay muted playsinline></video>
+ `;
+
+ const video=$("foodcheck-video");
+
+ const hints=new Map();
+ hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[
+  ZXing.BarcodeFormat.EAN_13,
+  ZXing.BarcodeFormat.EAN_8,
+  ZXing.BarcodeFormat.UPC_A,
+  ZXing.BarcodeFormat.UPC_E
+ ]);
+
+ const reader=new ZXing.BrowserMultiFormatReader(hints,250);
+ scanner=reader;
+ let handled=false;
+
+ try{
+  await reader.decodeFromConstraints(
+   {
+    audio:false,
+    video:{facingMode:{ideal:"environment"}}
+   },
+   video,
+   (result,error)=>{
+    if(!result||handled)return;
+
+    const code=result.getText().replace(/[^0-9]/g,"");
+
+    if(!/^\d{13}$/.test(code))return;
+
+    handled=true;
+    $("barcode").value=code;
+
+    try{reader.reset()}catch{}
+    scanner=null;
+    box.classList.add("hidden");
+    box.innerHTML="";
+
+    $("lookupBtn").click();
+   }
+  );
+ }catch(e){
+  console.error("FoodCheck ZXing scanner:",e);
+
+  try{reader.reset()}catch{}
+
+  scanner=null;
+  box.classList.add("hidden");
+  box.innerHTML="";
+
+  alert("Δεν ξεκίνησε η σάρωση. Έλεγξε την άδεια κάμερας.");
+ }
+};
 
 function foodKey(name){return String(name||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("el").replace(/[^\p{L}\p{N}]+/gu," ").trim()}
 function categoryFoods(type){return Array.isArray(foodCatalog[type])?foodCatalog[type]:[]}
@@ -274,10 +209,10 @@ $("foodItemName").addEventListener("change",recallFood);
 $("foodItemName").addEventListener("input",()=>{const key=foodKey($("foodItemName").value);const found=categoryFoods($("foodItemType").value).find(x=>foodKey(x.name)===key);if(found)recallFood();else clearFoodNutrition();foodSuggestionsOpen=true;drawFoodSuggestions(true)});
 $("addFood").onclick=addItem;
 function drawMealItems(){$("mealItems").innerHTML=mealItems.length?`<h3>Στοιχεία γεύματος</h3>`+mealItems.map((x,i)=>`<div class="item"><b>${esc(x.name)}</b> <span class="pill">${esc(x.type)}</span><br><span class="muted">Προγραμματισμένα: ${x.plannedWeight??x.weight??"—"} g · Καταναλώθηκαν: ${x.consumedWeight??"Δεν καταγράφηκε"} g · Σκεύος: ${esc(x.vessel||"Δεν καταγράφηκε")}${x.vesselDiameter!=null?` · Διάμετρος: ${x.vesselDiameter} cm`:""} · Υδατάνθρακες: ${x.carbs??"—"} g/100g</span> <button class="danger small" data-del="${i}">Αφαίρεση</button></div>`).join(""):`<p class='muted'>Δεν έχουν προστεθεί τρόφιμα.</p>`;$("mealItems").querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{mealItems.splice(+b.dataset.del,1);drawMealItems()})}
-function mealPayload(){let items=mealItems.map(x=>({...x,plannedWeight:x.plannedWeight??x.weight??null,consumedWeight:x.consumedWeight??null}));let plannedCarbs=0,consumedCarbs=0,plannedCount=0,consumedCount=0;for(const x of items){if(x.carbs!=null&&x.plannedWeight!=null){plannedCarbs+=x.carbs*x.plannedWeight/100;plannedCount++}if(x.carbs!=null&&x.consumedWeight!=null){consumedCarbs+=x.carbs*x.consumedWeight/100;consumedCount++}}let totalWeight=items.reduce((a,x)=>a+(x.plannedWeight||0),0);let r=assessMeal({carbs:plannedCount?plannedCarbs/(items.reduce((a,x)=>a+(x.plannedWeight||0),0)||1)*100:null},100);return {id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),name:$("mealName").value.trim()||"Γεύμα",date:new Date().toLocaleString("el-GR"),preGlucose:num("preGlucose"),preTime:$("preTime").value,trend:$("trend").value,items,estimatedWeight:totalWeight||null,method:$("method").value,photos:[],rapidDose:num("rapidDose"),rapidTime:$("rapidTime").value,plannedCarbs:plannedCount===items.length?plannedCarbs:null,consumedCarbs:consumedCount===items.length?consumedCarbs:null,totalCarbs:plannedCount===items.length?plannedCarbs:null,carbDataCount:plannedCount,consumedCarbDataCount:consumedCount,score:plannedCount===items.length&&items.length>0?r.score:null,post:[]}}
+function mealPayload(){let items=mealItems.map(x=>({...x,plannedWeight:x.plannedWeight??x.weight??null,consumedWeight:x.consumedWeight??null}));let plannedCarbs=0,consumedCarbs=0,plannedCount=0,consumedCount=0;for(const x of items){if(x.carbs!=null&&x.plannedWeight!=null){plannedCarbs+=x.carbs*x.plannedWeight/100;plannedCount++}if(x.carbs!=null&&x.consumedWeight!=null){consumedCarbs+=x.carbs*x.consumedWeight/100;consumedCount++}}let totalWeight=items.reduce((a,x)=>a+(x.plannedWeight||0),0);let avg=field=>{let weight=0,total=0;for(const x of items){const w=x.plannedWeight??x.weight??0;if(x[field]!=null&&w>0){total+=Number(x[field])*w/100;weight+=w}}return weight?total/weight*100:null};let r=assess({carbs:totalWeight?plannedCarbs/totalWeight*100:null,sugars:avg("sugars"),sat:avg("sat"),fiber:avg("fiber"),salt:avg("salt")},100);return {id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),name:$("mealName").value.trim()||"Γεύμα",date:new Date().toLocaleString("el-GR"),preGlucose:num("preGlucose"),preTime:$("preTime").value,trend:$("trend").value,items,estimatedWeight:totalWeight||null,method:$("method").value,photos:[],rapidDose:num("rapidDose"),rapidTime:$("rapidTime").value,plannedCarbs:plannedCount===items.length?plannedCarbs:null,consumedCarbs:consumedCount===items.length?consumedCarbs:null,totalCarbs:plannedCount===items.length?plannedCarbs:null,carbDataCount:plannedCount,consumedCarbDataCount:consumedCount,score:plannedCount===items.length&&items.length>0?r.score:null,impact:{diabetes:r.diabetesScore,triglycerides:r.triglyceridesScore,cholesterol:r.cholesterolScore},post:[]}}
 function mealScoreLabel(m){return m.score==null?"Δεν υπολογίστηκε — ανεπαρκή διατροφικά στοιχεία":`${m.score}/100`}
 function mealDetailsHTML(m){const items=Array.isArray(m.items)?m.items:[];return `<div class="meal-details"><h3>Αναλυτική σύνθεση γεύματος</h3>${items.length?items.map((x,i)=>`<div class="item"><b>${i+1}. ${esc(x.name||"Τρόφιμο χωρίς ονομασία")}</b> <span class="pill">${esc(x.type||"Χωρίς κατηγορία")}</span><p>Προγραμματισμένη ποσότητα: ${x.plannedWeight??x.weight??"—"} g · Πραγματικά καταναλωμένη: ${x.consumedWeight??"Δεν καταγράφηκε"} g</p><p>Σκεύος: ${esc(x.vessel||"Δεν καταγράφηκε")} · Διάμετρος: ${x.vesselDiameter!=null?esc(x.vesselDiameter)+" cm":"Δεν καταγράφηκε"}</p><p class="muted">Ανά 100 g: Υδατάνθρακες ${x.carbs??"—"} g · Σάκχαρα ${x.sugars??"—"} g · Κορεσμένα ${x.sat??"—"} g · Ίνες ${x.fiber??"—"} g · Αλάτι ${x.salt??"—"} g</p></div>`).join(""):`<p>Δεν υπάρχουν αποθηκευμένα επιμέρους τρόφιμα.</p>`}<h3>Στοιχεία γεύματος</h3><p>Τρόπος παρασκευής / πρόσθετα υλικά: ${esc(m.method||"Δεν καταγράφηκαν")}</p><p>Σάκχαρο πριν: ${m.preGlucose??"—"} mg/dL · Ώρα: ${esc(m.preTime||"—")} · Τάση CGM: ${esc(m.trend||"Δεν καταγράφηκε")}</p><p>Ταχεία ινσουλίνη που καταγράφηκε: ${m.rapidDose??"—"} μονάδες · Ώρα: ${esc(m.rapidTime||"—")}</p><p>Προγραμματισμένοι υδατάνθρακες: ${m.plannedCarbs==null?"Ανεπαρκή στοιχεία":m.plannedCarbs.toFixed(1)+" g"} · Καταναλωμένοι: ${m.consumedCarbs==null?"Δεν καταγράφηκαν πλήρως":m.consumedCarbs.toFixed(1)+" g"}</p><p>Βαθμολογία: ${mealScoreLabel(m)}</p>${m.post?.length?`<p>Μεταγευματικές μετρήσεις: ${m.post.map(p=>`+${p.after} ώρα: ${p.glucose} mg/dL`).join(" · ")}</p>`:""}</div>`}
-function mealHTML(m){let planned=m.plannedCarbs==null?"ελλιπή στοιχεία":m.plannedCarbs.toFixed(1)+" g",consumed=m.consumedCarbs==null?"δεν καταγράφηκε πλήρως":m.consumedCarbs.toFixed(1)+" g";return `<div class="result"><div class="score">${mealScoreLabel(m)}</div><b>${esc(m.name)}</b><p>Προγραμματισμένοι υδατάνθρακες: ${planned}. Υδατάνθρακες από την καταναλωμένη ποσότητα: ${consumed}.</p><p>Σάκχαρο πριν: ${m.preGlucose??"—"} mg/dL (${esc(m.preTime||"χωρίς ώρα")}) · Ταχεία ινσουλίνη που καταγράφηκε: ${m.rapidDose??"—"} μονάδες (${esc(m.rapidTime||"χωρίς ώρα")}).</p><p>Συνολικό προγραμματισμένο βάρος τροφίμων: ${m.estimatedWeight??"—"} g</p><p class="muted">Η βαθμολογία είναι ενδεικτική και δεν αποτελεί ιατρική αξιολόγηση ή πρόβλεψη γλυκόζης.</p></div>`}
+function mealHTML(m){let planned=m.plannedCarbs==null?"ελλιπή στοιχεία":m.plannedCarbs.toFixed(1)+" g",consumed=m.consumedCarbs==null?"δεν καταγράφηκε πλήρως":m.consumedCarbs.toFixed(1)+" g";return `<div class="result"><div class="score">${mealScoreLabel(m)}</div><b>${esc(m.name)}</b>${m.impact?`<h3>Ενδείξεις επιβάρυνσης γεύματος</h3>${barHTML("Διαβήτης",m.impact.diabetes,"Με βάση τους υπολογισμένους υδατάνθρακες του γεύματος.")}${barHTML("Τριγλυκερίδια",m.impact.triglycerides,"Με βάση τους διαθέσιμους υδατάνθρακες και τα σάκχαρα.")}${barHTML("Χοληστερίνη",m.impact.cholesterol,"Με βάση τα διαθέσιμα κορεσμένα λιπαρά.")}`:""}<p>Προγραμματισμένοι υδατάνθρακες: ${planned}. Υδατάνθρακες από την καταναλωμένη ποσότητα: ${consumed}.</p><p>Σάκχαρο πριν: ${m.preGlucose??"—"} mg/dL (${esc(m.preTime||"χωρίς ώρα")}) · Ταχεία ινσουλίνη που καταγράφηκε: ${m.rapidDose??"—"} μονάδες (${esc(m.rapidTime||"χωρίς ώρα")}).</p><p>Συνολικό προγραμματισμένο βάρος τροφίμων: ${m.estimatedWeight??"—"} g</p><p class="muted">Η βαθμολογία είναι ενδεικτική και δεν αποτελεί ιατρική αξιολόγηση ή πρόβλεψη γλυκόζης.</p></div>`}
 async function saveJournal(m){journal.unshift(m);const ok=await save();drawJournal();if(!ok)$("mealResult").insertAdjacentHTML("beforeend",'<p class="muted">Προσοχή: η αποθήκευση στο ημερολόγιο δεν επιβεβαιώθηκε.</p>');return ok}
 $("analyzeMeal").onclick=async()=>{if(!mealItems.length){alert("Πρόσθεσε τουλάχιστον ένα τρόφιμο.");return}let m=mealPayload();lastMealResult=m;$("mealResult").innerHTML=mealHTML(m);await saveJournal(m)};
 $("saveMealTemplate").onclick=()=>{if(!mealItems.length){alert("Πρόσθεσε πρώτα τα τρόφιμα του γεύματος.");return}let m=mealPayload();mealLibrary.unshift({...m,id:"lib-"+m.id});save();drawLibrary();alert("Το γεύμα αποθηκεύτηκε στη βιβλιοθήκη.")};
