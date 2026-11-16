@@ -51,6 +51,7 @@ function checkProductValues(p){
  if(valid(p.trans)&&valid(p.fat)&&Number(p.trans)>Number(p.fat))
   mark("trans","Τα trans λιπαρά υπερβαίνουν τα συνολικά λιπαρά. Χρειάζεται επιβεβαίωση.");
 
+ if(p.fruitVegPercent!=null&&Number.isFinite(Number(p.fruitVegPercent))&&Number(p.fruitVegPercent)>100)mark("fruitVegPercent","Το ποσοστό δεν μπορεί να υπερβαίνει το 100%.");
  if(p.novaGroup!=null&&p.novaGroup!==""){
   const n=Number(p.novaGroup);
   if(!Number.isInteger(n)||n<1||n>4)
@@ -126,7 +127,7 @@ function assess(p,portion=100){
  const nova=Number(data.novaGroup);
  const ing=String(data.ingredients||"").toLocaleLowerCase("el");
  const confirmedTrans=valid(data.trans)&&Number(data.trans)>0;
- const ingredientTrans=/trans\\s*fat/.test(ing);
+ const ingredientTrans=/trans\s*fat/.test(ing);
  const partiallyHydrogenated=/μερικώς υδρογονωμέν|partially hydrogenated/.test(ing);
  const forbiddenReasons=[];
  if(nova===4)forbiddenReasons.push("Υπερεπεξεργασμένο προϊόν (NOVA 4).");
@@ -137,7 +138,8 @@ function assess(p,portion=100){
  const qualityReasons=[];
  if(nutri.score!=null){
   qualityReasons.push("Αρνητικοί βαθμοί N: "+nutri.N+" (ενέργεια "+nutri.nEnergy+", κορεσμένα "+nutri.nSat+", σάκχαρα "+nutri.nSugar+", αλάτι "+nutri.nSalt+").");
-  qualityReasons.push("Θετικοί βαθμοί P: "+nutri.P+" (ίνες "+nutri.fiberPoints+", πρωτεΐνη "+nutri.proteinPoints+", φρούτα/λαχανικά/όσπρια "+nutri.fruitPoints+").");
+  qualityReasons.push("Θετικοί βαθμοί P: "+nutri.P+" (ίνες "+nutri.fiberPoints+", πρωτεΐνη "+nutri.proteinPoints+", φρούτα/λαχανικά/όσπρια "+nutri.fruitPoints+")."+(nutri.N>=11?" Επειδή N ≥ 11, οι βαθμοί πρωτεΐνης δεν αφαιρούνται από το τελικό αποτέλεσμα.":""));
+  notes.push(nutri.reason);
   if(data.fiber==null)notes.push("Δεν υπάρχουν στοιχεία φυτικών ινών· δεν αποδόθηκαν θετικοί βαθμοί ινών.");
   if(data.fruitVegPercent==null)notes.push("Δεν υπάρχει εκτίμηση ποσοστού φρούτων/λαχανικών/οσπρίων· δεν αποδόθηκαν σχετικοί θετικοί βαθμοί.");
  }else notes.push(nutri.reason);
@@ -150,7 +152,7 @@ function assess(p,portion=100){
  if(!valid(data.sat)&&!valid(data.trans))notes.push("Δεν υπάρχουν αξιόπιστα στοιχεία κορεσμένων ή trans λιπαρών.");
  return {
   score:nutri.score,grade:nutri.grade,gradeLabel:gradeLabels[nutri.grade]||"Δεν υπολογίστηκε",
-  level:nutri.grade==="A"||nutri.grade==="B"?"risk-low":nutri.grade==="C"?"risk-mid":"risk-high",
+  level:nutri.grade==null||nutri.grade==="C"?"risk-mid":nutri.grade==="A"||nutri.grade==="B"?"risk-low":"risk-high",
   confidence,notes,portionCarbs:carbs,portionSat:sat,portionTrans:trans,portionProtein:per(data.protein),known,
   diabetesScore:diabetes,triglyceridesScore:triglycerides,cholesterolScore:cholesterol,sugarsScore:sugarImpact,
   qualityReasons,forbiddenReasons,warnings
