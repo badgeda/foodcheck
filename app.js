@@ -127,7 +127,7 @@ function assess(p,portion=100){
  const nova=Number(data.novaGroup);
  const ing=String(data.ingredients||"").toLocaleLowerCase("el");
  const confirmedTrans=valid(data.trans)&&Number(data.trans)>0;
- const ingredientTrans=/trans\s*fat/.test(ing);
+ const ingredientTrans=/trans[-\s]*fat/.test(ing);
  const partiallyHydrogenated=/μερικώς υδρογονωμέν|partially hydrogenated/.test(ing);
  const forbiddenReasons=[];
  if(nova===4)forbiddenReasons.push("Υπερεπεξεργασμένο προϊόν (NOVA 4).");
