@@ -243,7 +243,7 @@ $("lookupBtn").onclick=async()=>{let code=$("barcode").value.replace(/\D/g,"");i
 
 $("scanBtn").onclick=async()=>{
  if(!window.ZXing||!ZXing.BrowserMultiFormatReader){
-  alert("Δεν φορτώθηκε η νέα βιβλιοθήκη σάρωσης. Έλεγξε τη σύνδεση στο διαδίκτυο.");
+  alert("Δεν φορτώθηκε η τοπική βιβλιοθήκη σάρωσης. Κλείσε και άνοιξε ξανά το FoodCheck. Αν το πρόβλημα συνεχιστεί, χρειάζεται έλεγχος της εγκατάστασης.");
   return;
  }
 
@@ -375,12 +375,45 @@ $("unknownMealWeight").addEventListener("input",updateUnknownEstimate);
 $("mealName").addEventListener("input",updateUnknownEstimate);
 function recipeWeight(item){
  const q=Number(item.quantity)||0,u=item.unit,n=foodKey(item.name);
+ if(!Number.isFinite(q)||q<=0)return null;
  if(u==="g")return q;
  if(u==="kg")return q*1000;
- if(u==="ml"||u==="l"){const ml=q*(u==="l"?1000:1);if(/νερο|νερό/.test(n))return ml;if(/ελαιολαδ|λαδι/.test(n))return ml*0.91;return null;}
- if(/ελαιολαδ|λαδι/.test(n))return q*(u==="tbsp"?13.5:u==="tsp"?4.5:null);
- if(/αλατι/.test(n))return q*(u==="tbsp"?18:u==="tsp"?6:null);
- if(/πιπερ/.test(n))return q*(u==="tbsp"?6:u==="tsp"?2:null);
+ const has=(...terms)=>terms.some(term=>n.includes(foodKey(term)));
+ if(u==="ml"||u==="l"){
+  const ml=q*(u==="l"?1000:1);
+  if(has("νερό","νερο","ζωμός","ζωμο"))return ml;
+  if(has("ελαιόλαδο","ελαιολαδο","λάδι","λαδι"))return ml*0.91;
+  if(has("γάλα","γαλα"))return ml*1.03;
+  if(has("μέλι","μελι"))return ml*1.42;
+  return null;
+ }
+ if(u==="piece"){
+  const pieces=[
+   [["αυγό","αυγο","αυγά","αυγα"],55],[["κρεμμύδι","κρεμμυδι"],110],
+   [["σκόρδο","σκορδο","σκελίδα","σκελιδα"],3],[["ντομάτα","ντοματα"],120],
+   [["πατάτα","πατατα"],150],[["καρότο","καροτο"],60],
+   [["πιπεριά","πιπερια"],150],[["κολοκύθι","κολοκυθι"],200],
+   [["λεμόνι","λεμονι"],100],[["πορτοκάλι","πορτοκαλι"],180],
+   [["μήλο","μηλο"],180],[["αγγούρι","αγγουρι"],300],
+   [["μπανάνα","μπανανα"],120],[["πίτα","πιτα"],70],
+   [["μανιτάρι","μανιταρι"],18],[["μελιτζάνα","μελιτζανα"],250],
+   [["λάχανο","λαχανο"],700],[["μαρούλι","μαρουλι"],350]
+  ];
+  const match=pieces.find(([names])=>names.some(name=>n===foodKey(name)||n.startsWith(foodKey(name)+" ")));
+  return match?q*match[1]:null;
+ }
+ const spoonWeights=[
+  [["ελαιόλαδο","ελαιολαδο","λάδι","λαδι"],13.5],[["αλάτι","αλατι"],18],
+  [["πιπέρι","πιπερι"],6],[["ρύζι","ρυζι"],12],[["αλεύρι","αλευρι"],8],
+  [["ζάχαρη","ζαχαρη"],12.5],[["μέλι","μελι"],21],
+  [["πελτές","πελτες","τοματοπολτός","τοματοπολτος"],16],
+  [["γιαούρτι","γιαουρτι"],15],[["παρμεζάνα","παρμεζανα"],10],
+  [["φέτα","φετα"],15],[["βρώμη","βρωμη"],6],
+  [["φρυγανιά","φρυγανια","γαλέτα","γαλετα"],7],
+  [["φακές","φακες","φακή","φακη"],13],[["φασόλια","φασολια"],12]
+ ];
+ const spoon=spoonWeights.find(([names])=>names.some(name=>n.includes(foodKey(name))));
+ if(spoon)return q*spoon[1]*(u==="tsp"?1/3:1);
  return null;
 }
 function aggregateRecipeNutrition(){
@@ -442,7 +475,17 @@ function mealPayload(){
  }
  let plannedCarbs=null,consumedCarbs=null,impact={diabetes:null,triglycerides:null,cholesterol:null,sugars:null},score=null;
  if(isUnknown&&profile&&portionWeight){
-  const n=profile.nutrition,carbs=n.carbs*portionWeight/100;\n  plannedCarbs=carbs;consumedCarbs=carbs;\n  // Δεν αποδίδεται αριθμητικός δείκτης κινδύνου από μη εξακριβωμένη σύνθεση.
+  const carbs=profile.nutrition.carbs*portionWeight/100;
+  plannedCarbs=carbs;consumedCarbs=carbs;
+  // Δεν αποδίδεται αριθμητικός δείκτης κινδύνου από μη εξακριβωμένη σύνθεση.
+ }else if(!isUnknown&&recipeNutrition.carbs!=null){
+  const fraction=Math.min(1,consumedPortions/totalPortions);
+  plannedCarbs=recipeNutrition.carbs*fraction;
+  const totalRecipeWeight=recipeItems.reduce((sum,item)=>sum+(recipeWeight(item)||0),0);
+  const actualWeight=num("actualMealWeight");
+  consumedCarbs=actualWeight!=null&&totalRecipeWeight>0
+   ?recipeNutrition.carbs*actualWeight/totalRecipeWeight
+   :plannedCarbs;
  }
  return {id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),name:$("mealName").value.trim()||"Γεύμα",date:new Date().toLocaleString("el-GR"),mode:mealMode,preGlucose:num("preGlucose"),preTime:$("preTime").value,trend:$("trend").value,items,estimatedWeight:isUnknown?portionWeight:items.reduce((a,x)=>a+(recipeWeight(x)||0),0)||null,method:isUnknown?$("unknownNotes").value:$("method").value,recipeItems:isUnknown?[]:recipeItems.map(x=>({...x,weight:recipeWeight(x)})),recipeNutrition,recipeTotalPortions:totalPortions,recipeConsumedPortions:consumedPortions,consumedMealWeight:isUnknown?portionWeight:num("actualMealWeight"),unknownIngredients:isUnknown?[...unknownIngredients]:[],unknownVessel:isUnknown?$("unknownVessel").value:"",unknownProfile:profile?.label||null,estimateType:isUnknown?(profile?"τυπικό προφίλ – προσεγγιστική εκτίμηση":"ανεπαρκή στοιχεία"): "υπολογισμός από υλικά συνταγής",photos:[],rapidDose:num("rapidDose"),rapidTime:$("rapidTime").value,plannedCarbs,consumedCarbs,totalCarbs:plannedCarbs,carbDataCount:plannedCarbs==null?0:1,consumedCarbDataCount:consumedCarbs==null?0:1,score,impact,post:[]};
 }
@@ -465,7 +508,7 @@ function mealDetailsHTML(m){const items=Array.isArray(m.items)?m.items:[];return
 function mealHTML(m){let planned=m.plannedCarbs==null?"ελλιπή στοιχεία":m.plannedCarbs.toFixed(1)+" g",consumed=m.consumedCarbs==null?"δεν καταγράφηκε πλήρως":m.consumedCarbs.toFixed(1)+" g";return `<div class="result"><div class="score">${mealScoreLabel(m)}</div><b>${esc(m.name)}</b>${m.mode==="unknown"?`<p><b>Τρόπος εκτίμησης:</b> ${esc(m.estimateType||"")}</p><p><b>Κύρια υλικά:</b> ${(m.unknownIngredients||[]).map(esc).join(", ")||"Δεν καταγράφηκαν"}</p>${unknownNutritionHTML(m)}`:recipeNutritionHTML(m)}${m.impact?`<h3>Ενδείξεις επιβάρυνσης γεύματος</h3>${barHTML("Διαβήτης",m.impact.diabetes,"Με βάση τους υπολογισμένους υδατάνθρακες του γεύματος.")}${barHTML("Τριγλυκερίδια",m.impact.triglycerides,"Με βάση τους διαθέσιμους υδατάνθρακες και τα σάκχαρα.")}${barHTML("Χοληστερίνη",m.impact.cholesterol,"Με βάση τα διαθέσιμα κορεσμένα λιπαρά.")}${barHTML("Σάκχαρα",m.impact.sugars,"Με βάση τα συνολικά γραμμάρια σακχάρων των προγραμματισμένων ποσοτήτων.")}`:""}<p>Προγραμματισμένοι υδατάνθρακες: ${planned}. Υδατάνθρακες από την καταναλωμένη ποσότητα: ${consumed}.</p><p>Σάκχαρο πριν: ${m.preGlucose??"—"} mg/dL (${esc(m.preTime||"χωρίς ώρα")}) · Ταχεία ινσουλίνη που καταγράφηκε: ${m.rapidDose??"—"} μονάδες (${esc(m.rapidTime||"χωρίς ώρα")}).</p><p>Συνολικό βάρος υλικών/τροφίμων: ${m.estimatedWeight??"—"} g · Πραγματικό βάρος μερίδας που έφαγα: ${m.consumedMealWeight==null?"Δεν καταγράφηκε":m.consumedMealWeight+" g"}</p><p class="muted">Η βαθμολογία είναι ενδεικτική και δεν αποτελεί ιατρική αξιολόγηση ή πρόβλεψη γλυκόζης.</p></div>`}
 async function saveJournal(m){journal.unshift(m);const ok=await save();drawJournal();if(!ok)$("mealResult").insertAdjacentHTML("beforeend",'<p class="muted">Προσοχή: η αποθήκευση στο ημερολόγιο δεν επιβεβαιώθηκε.</p>');return ok}
 $("analyzeMeal").onclick=async()=>{if(mealMode==="unknown"&&(!$("mealName").value.trim()||!num("unknownMealWeight")||!unknownIngredients.length)){alert("Συμπλήρωσε ονομασία φαγητού, βάρος μερίδας και τουλάχιστον ένα κύριο υλικό.");return}if(mealMode==="recipe"&&!recipeItems.length){alert("Πρόσθεσε τουλάχιστον ένα υλικό συνταγής.");return}let m=mealPayload();lastMealResult=m;$("mealResult").innerHTML=mealHTML(m);await saveJournal(m)};
-$("saveMealTemplate").onclick=()=>{if(mealMode==="unknown"&&(!num("unknownMealWeight")||!unknownIngredients.length)){alert("Συμπλήρωσε το βάρος της μερίδας και τουλάχιστον ένα κύριο υλικό.");return}if(mealMode==="recipe"&&!recipeItems.length){alert("Πρόσθεσε πρώτα υλικά συνταγής.");return}let m=mealPayload();mealLibrary.unshift({...m,id:"lib-"+m.id});save();drawLibrary();alert("Το γεύμα αποθηκεύτηκε στη βιβλιοθήκη.")};
+$("saveMealTemplate").onclick=async()=>{if(mealMode==="unknown"&&(!num("unknownMealWeight")||!unknownIngredients.length)){alert("Συμπλήρωσε το βάρος της μερίδας και τουλάχιστον ένα κύριο υλικό.");return}if(mealMode==="recipe"&&!recipeItems.length){alert("Πρόσθεσε πρώτα υλικά συνταγής.");return}let m=mealPayload();mealLibrary.unshift({...m,id:"lib-"+m.id});const ok=await save();if(ok){drawLibrary();alert("Το γεύμα αποθηκεύτηκε στη βιβλιοθήκη.")}else{mealLibrary.shift();drawLibrary();alert("Δεν επιβεβαιώθηκε η αποθήκευση. Το γεύμα δεν προστέθηκε στη βιβλιοθήκη.")}};
 function resetMealForm(){
  const ids=["mealName","preGlucose","preTime","method","rapidDose","rapidTime","recipeName","recipeQty","recipeEnergy","recipeCarbs","recipeSugars","recipeFat","recipeSat","recipeFiber","recipeSalt","recipeProtein","recipeTrans","actualMealWeight","unknownMealWeight","unknownIngredientName","unknownNotes"];
  ids.forEach(id=>{const el=$(id);if(el)el.value=""});
