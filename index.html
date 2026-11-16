@@ -26,6 +26,9 @@ button{border:0;border-radius:10px;padding:11px 14px;font:inherit;font-weight:70
 .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}.photo-grid img{width:100%;height:100px;object-fit:cover;border-radius:8px}
 .small{font-size:.82rem;padding:7px 9px}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .food-picker{position:relative}.food-suggestions{position:absolute;z-index:20;top:100%;left:0;right:0;max-height:220px;overflow:auto;background:#fff;border:1px solid #cbd6cf;border-radius:9px;box-shadow:0 5px 16px #163d2b20;padding:5px}.food-suggestions button{display:block;width:100%;text-align:left;background:#fff;color:#18231e;border-radius:6px;padding:9px;font-weight:500}.food-suggestions button:hover,.food-suggestions button:focus{background:#e7f1e9}.food-empty{padding:9px;color:#65736c;font-size:.85rem}.meal-details{margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#f7faf7}.meal-details h3{margin-top:6px}.meal-details p{margin:6px 0}
+
+.impact{margin:14px 0 18px}.impact-head{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:.92rem}.impact-track{height:16px;border-radius:99px;position:relative;margin:10px 5px 5px;background:linear-gradient(90deg,#2b9b58 0%,#9bc64b 33%,#edc34b 60%,#e98a43 80%,#d94747 100%);box-shadow:inset 0 0 0 1px #00000012}.impact-marker{position:absolute;top:-5px;width:4px;height:26px;background:#111;border:1px solid #fff;border-radius:3px;transform:translateX(-50%);box-shadow:0 1px 3px #0008}.impact-track.unavailable{background:repeating-linear-gradient(135deg,#e2e7e3,#e2e7e3 7px,#f4f6f4 7px,#f4f6f4 14px)}
+
 footer{max-width:850px;margin:auto;padding:0 16px 25px;color:#65736c;font-size:.8rem}
 @media(max-width:560px){.grid{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr 1fr}.panel{padding:13px}}
 </style>
@@ -60,8 +63,12 @@ footer{max-width:850px;margin:auto;padding:0 16px 25px;color:#65736c;font-size:.
 <div><label for="fiber">Ίνες (g/100g)</label><input id="fiber" type="number" min="0" step=".1"></div>
 <div><label for="salt">Αλάτι (g/100g)</label><input id="salt" type="number" min="0" step=".01"></div>
 <div><label for="protein">Πρωτεΐνη (g/100g)</label><input id="protein" type="number" min="0" step=".1"></div>
+<div><label for="trans">Trans λιπαρά (g/100g)</label><input id="trans" type="number" min="0" step=".01"></div>
+<div><label for="novaGroup">Κατηγορία επεξεργασίας NOVA</label><select id="novaGroup"><option value="">Άγνωστη</option><option value="1">1 – Μη/ελάχιστα επεξεργασμένο</option><option value="2">2 – Μαγειρικά συστατικά</option><option value="3">3 – Επεξεργασμένο</option><option value="4">4 – Υπερεπεξεργασμένο</option></select></div>
 <div><label for="portion">Μερίδα (g)</label><input id="portion" type="number" min="1" value="50"></div>
 </div>
+<label for="ingredients">Συστατικά (όπως αναγράφονται στην ετικέτα)</label><textarea id="ingredients" rows="3" placeholder="Επικόλλησε τη λίστα συστατικών"></textarea>
+<label for="additives">Πρόσθετα / αριθμοί Ε (προαιρετικά)</label><input id="additives" placeholder="π.χ. E202, E300">
 <div class="actions"><button class="primary" id="rateProduct">Αξιολόγηση</button><button class="secondary" id="saveFav">Αποθήκευση στα αγαπημένα</button></div>
 <div id="productResult" aria-live="polite"></div>
 </div>
@@ -139,6 +146,6 @@ footer{max-width:850px;margin:auto;padding:0 16px 25px;color:#65736c;font-size:.
 </main>
 <footer>Το FoodCheck είναι ενημερωτικό εργαλείο και όχι ιατρική συσκευή ή ιατρική οδηγία. Δεν διαγιγνώσκει, δεν προτείνει δόσεις ινσουλίνης και δεν αντικαθιστά τον γιατρό. Οι φωτογραφίες δεν προσδιορίζουν με ακρίβεια βάρος, λάδι ή κρυφά υλικά· οι εκτιμήσεις χρειάζονται επιβεβαίωση. Τα δεδομένα αποθηκεύονται τοπικά στη συσκευή και δεν συγχρονίζονται αυτόματα.</footer>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>  
+<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
 <script src="./app.js"></script>
 </body></html>
