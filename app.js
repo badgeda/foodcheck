@@ -129,6 +129,8 @@ function assess(p,portion=100){
  const explicitTrans=(valid(data.trans)&&Number(data.trans)>0)||
   /μερικώς υδρογονωμέν|partially hydrogenated|trans\s*fat/.test(ing);
 
+const confirmedTrans=valid(data.trans)&&Number(data.trans)>0;
+
  if(explicitTrans){
   quality-=20;
   qualityReasons.push("Εντοπίστηκαν trans λιπαρά ή μερικώς υδρογονωμένα λιπαρά.");
