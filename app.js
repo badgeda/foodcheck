@@ -4,6 +4,12 @@ const read=(k,d=[])=>{try{return JSON.parse(localStorage.getItem(k)||JSON.string
 let history=read(KEYS.hist),favorites=read(KEYS.favs),mealLibrary=read(KEYS.meals),journal=read(KEYS.journal),foodCatalog=read(KEYS.foods,{});
 let mealItems=[],photos=[],lastProduct=null,lastMealResult=null,scanner=null;
 const PHOTO_DB="foodcheck_photos",PHOTO_STORE="images";
+
+// Μητρώο προϊόντων με ανεξάρτητα τεκμηριωμένο NOVA 4.
+// Προστίθενται μόνο συγκεκριμένα barcode μετά από έλεγχο αξιόπιστης πηγής.
+const VERIFIED_NOVA4_PRODUCTS = new Map([
+]);
+
 let photoDbPromise=null;
 const photoIds=new Map();
 function openPhotoDB(){
@@ -125,12 +131,15 @@ function assess(p,portion=100){
  if(valid(data.protein)&&per(data.protein)>=10)notes.push("Καλή ποσότητα πρωτεΐνης στη μερίδα.");
  if(valid(data.salt)&&data.salt>1.5)notes.push("Υψηλή περιεκτικότητα σε αλάτι ανά 100 g.");
  const nova=Number(data.novaGroup);
+ const novaCode=String(data.code||"").replace(/\D/g,"");
+ const verifiedNova4=nova===4&&VERIFIED_NOVA4_PRODUCTS.has(novaCode);
+ const novaStatus=nova===4?(verifiedNova4?"verified":"caution"):valid(data.novaGroup)?"known":"unknown";
  const ing=String(data.ingredients||"").toLocaleLowerCase("el");
  const confirmedTrans=valid(data.trans)&&Number(data.trans)>0;
  const ingredientTrans=/trans[-\s]*fat/.test(ing);
  const partiallyHydrogenated=/μερικώς υδρογονωμέν|partially hydrogenated/.test(ing);
  const forbiddenReasons=[];
- if(nova===4)forbiddenReasons.push("Υπερεπεξεργασμένο προϊόν (NOVA 4).");
+ if(verifiedNova4)forbiddenReasons.push("Υπερεπεξεργασμένο προϊόν (NOVA 4), με τεκμηρίωση για το συγκεκριμένο προϊόν.");
  if(confirmedTrans||ingredientTrans)forbiddenReasons.push("Περιέχει trans λιπαρά.");
  else if(partiallyHydrogenated)forbiddenReasons.push("Περιέχει μερικώς υδρογονωμένα λιπαρά.");
  const nutri=nutriScore2023(data);
@@ -143,7 +152,9 @@ function assess(p,portion=100){
   if(data.fiber==null)notes.push("Δεν υπάρχουν στοιχεία φυτικών ινών· δεν αποδόθηκαν θετικοί βαθμοί ινών.");
   if(data.fruitVegPercent==null)notes.push("Δεν υπάρχει εκτίμηση ποσοστού φρούτων/λαχανικών/οσπρίων· δεν αποδόθηκαν σχετικοί θετικοί βαθμοί.");
  }else notes.push(nutri.reason);
- if(nova===4)qualityReasons.push("NOVA 4: υπερεπεξεργασμένο προϊόν — ξεχωριστός κανόνας απαγόρευσης.");
+ if(nova===4)qualityReasons.push(verifiedNova4
+  ?"NOVA 4: τεκμηριωμένο για το συγκεκριμένο προϊόν — εφαρμόζεται ο κανόνας απαγόρευσης."
+  :"NOVA 4 αναφέρεται στη βάση Open Food Facts, αλλά δεν έχει τεκμηριωθεί ανεξάρτητα για το συγκεκριμένο προϊόν.");
  if(confirmedTrans||ingredientTrans)qualityReasons.push("Εντοπίστηκαν trans λιπαρά — ξεχωριστός κανόνας απαγόρευσης.");
  if(partiallyHydrogenated)qualityReasons.push("Εντοπίστηκαν μερικώς υδρογονωμένα λιπαρά στα συστατικά — ξεχωριστός κανόνας απαγόρευσης.");
  const known=[data.energyKj,data.carbs,data.sugars,data.sat,data.salt,data.fiber,data.fat,data.protein,data.trans,data.novaGroup].filter(valid).length;
@@ -155,7 +166,7 @@ function assess(p,portion=100){
   level:nutri.grade==null||nutri.grade==="C"?"risk-mid":nutri.grade==="A"||nutri.grade==="B"?"risk-low":"risk-high",
   confidence,notes,portionCarbs:carbs,portionSat:sat,portionTrans:trans,portionProtein:per(data.protein),known,
   diabetesScore:diabetes,triglyceridesScore:triglycerides,cholesterolScore:cholesterol,sugarsScore:sugarImpact,
-  qualityReasons,forbiddenReasons,warnings
+  qualityReasons,forbiddenReasons,warnings,novaStatus
  };
 }
 function barHTML(label,value,reason){
@@ -178,6 +189,7 @@ function resultHTML(p,portion,r){
  ${r.cholesterolScore!=null&&r.cholesterolScore>33?'<div style="background:#fff8e1;border:2px solid #e5ad27;color:#805600;padding:10px;margin:10px 0;border-radius:8px;font-size:17px;font-weight:900;text-align:center;">⚠️ ΚΙΝΔΥΝΟΣ ΑΥΞΗΣΗΣ ΧΟΛΗΣΤΕΡΙΝΗΣ</div>':""}
  ${r.triglyceridesScore!=null&&r.triglyceridesScore>33?'<div style="background:#fff8e1;border:2px solid #e5ad27;color:#805600;padding:10px;margin:10px 0;border-radius:8px;font-size:17px;font-weight:900;text-align:center;">⚠️ ΚΙΝΔΥΝΟΣ ΑΥΞΗΣΗΣ ΤΡΙΓΛΥΚΕΡΙΔΙΩΝ</div>':""}
  ${r.forbiddenReasons?.length?'<div style="background:#ffebee;border:2px solid #c62828;color:#b71c1c;padding:12px;margin:12px 0;border-radius:8px;font-size:20px;font-weight:900;text-align:center;">⛔ ΑΚΑΤΑΛΛΗΛΟ ΠΡΟΣ ΚΑΤΑΝΑΛΩΣΗ</div><ul style="color:#b71c1c;font-weight:700;">'+r.forbiddenReasons.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>":""}
+ ${r.novaStatus==="caution"?'<div style="background:#fff8e1;border:2px solid #e5ad27;color:#805600;padding:11px;margin:10px 0;border-radius:8px;font-size:18px;font-weight:900;text-align:center;">⚠️ ΚΑΤΑΝΑΛΩΣΗ ΜΕ ΠΡΟΣΟΧΗ</div>':r.novaStatus==="unknown"?'<p class="muted"><b>Δεν υπάρχουν διαθέσιμα στοιχεία NOVA.</b></p>':""}
  <b>${esc(p.name||"Τρόφιμο")}</b>
  <h3>Γενική διατροφική ποιότητα</h3>
  <p>Υπολογισμός βάσει Nutri-Score 2023 ανά 100 g. Η βαθμολογία είναι οι επίσημοι βαθμοί του αλγορίθμου και όχι ποσοστό /100. Η εφαρμογή διακρίνει την άγνωστη πληροφορία από το μηδέν.</p>
