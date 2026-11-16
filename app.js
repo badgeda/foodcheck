@@ -198,8 +198,7 @@ function resultHTML(p,portion,r){
  ${barHTML("Χοληστερίνη",r.cholesterolScore,`Κορεσμένα λιπαρά: ${r.portionSat==null?"—":r.portionSat.toFixed(1)+" g"} · Trans λιπαρά: ${r.portionTrans==null?"—":r.portionTrans.toFixed(2)+" g"} στη μερίδα.`)}
  <h3>Διατροφικά στοιχεία ανά 100 g</h3>
  <p>Υδατάνθρακες: ${valueHTML("carbs",p.carbs)} · Σάκχαρα: ${valueHTML("sugars",p.sugars)} · Πρωτεΐνες: ${valueHTML("protein",p.protein)}.</p>
- <p>Συνολικά λιπαρά: ${valueHTML("fat",p.fat)} · Κορεσμένα: ${valueHTML("sat",p.sat)} · Trans: ${valueHTML("trans",p.trans)} · Ίνες: ${valueHTML("fiber",p.fiber)} · Αλάτι: ${valueHTML("salt",p.salt)}.</p>
- <h3>Συστατικά και επεξεργασία</h3>
+<p>Συνολικά λιπαρά: ${valueHTML("fat",p.fat)} · Κορεσμένα: ${valueHTML("sat",p.sat)} · <strong style="${Number(p.trans)>0?'color:#d00000;font-weight:900':''}">Trans: ${valueHTML("trans",p.trans)}</strong> · Ίνες: ${valueHTML("fiber",p.fiber)} · Αλάτι: ${valueHTML("salt",p.salt)}.</p> <h3>Συστατικά και επεξεργασία</h3>
  <p>${esc(p.ingredients||"Δεν καταχωρίστηκε λίστα συστατικών.")}</p>
  <p>Κατηγορία NOVA: ${valueHTML("novaGroup",p.novaGroup,"")} · Πρόσθετα: ${esc(p.additives||"Δεν υπάρχουν διαθέσιμα στοιχεία.")}</p>
  ${r.notes.length?"<b>Παρατηρήσεις</b><ul>"+r.notes.map(n=>"<li>"+esc(n)+"</li>").join("")+"</ul>":""}
