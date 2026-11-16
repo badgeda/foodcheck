@@ -110,7 +110,15 @@ $("rateProduct").onclick=()=>{let p=currentProduct();if(Object.values(p).filter(
 $("saveFav").onclick=()=>{let p=lastProduct||currentProduct();if(!p.name){alert("Πρώτα αξιολόγησε ή συμπλήρωσε ένα προϊόν.");return}if(!favorites.some(x=>x.code===p.code&&x.name===p.name)){favorites.unshift(p);save();drawProductLists()}};
 function drawProductLists(){
  $("productHistory").innerHTML=history.length?history.map((h,i)=>`<div class="item"><b>${esc(h.name)}</b> <span class="pill">${esc(h.date||"")}</span><br><span class="muted">Μερίδα ${h.portion||"—"} g · Βαθμολογία ${h.score??"—"}/100</span> <button class="secondary small" data-h="${i}">Προβολή</button></div>`).join(""):"Δεν υπάρχουν καταχωρίσεις.";
- $("productHistory").querySelectorAll("[data-h]").forEach(b=>b.onclick=()=>{let p=history[+b.dataset.h].product;fillProduct(p);showProduct(p,false)});
+$("productHistory").querySelectorAll("[data-h]").forEach(b=>b.onclick=e=>{
+ e.preventDefault();
+ const h=history[+b.dataset.h];
+ const p=h?.product||h;
+ if(!p){alert("Δεν βρέθηκαν αποθηκευμένα στοιχεία προϊόντος.");return}
+ fillProduct(p);
+ if(h.portion)$("portion").value=h.portion;
+ showProduct(p,false);
+});
  $("productFavorites").innerHTML=favorites.length?favorites.map((p,i)=>`<div class="item"><b>${esc(p.name)}</b> <button class="secondary small" data-f="${i}">Έλεγχος</button> <button class="danger small" data-r="${i}">Αφαίρεση</button></div>`).join(""):"Δεν υπάρχουν αγαπημένα.";
  $("productFavorites").querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{let p=favorites[+b.dataset.f];fillProduct(p);showProduct(p,false)});
  $("productFavorites").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{favorites.splice(+b.dataset.r,1);save();drawProductLists()});
