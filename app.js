@@ -375,7 +375,7 @@ function drawRecipeItems(){
  box.querySelectorAll("[data-recipeedit]").forEach(b=>b.onclick=()=>{const i=+b.dataset.recipeedit,x=recipeItems[i];$("recipeName").value=x.name;$("recipeQty").value=x.quantity;$("recipeUnit").value=x.unit;for(const field of ["energyKj","carbs","sugars","fat","sat","fiber","salt","protein","trans"])$("recipe"+field[0].toUpperCase()+field.slice(1)).value=x[field]??"";recipeItems.splice(i,1);drawRecipeItems();$("recipeName").focus()});
  updateRecipeWeightSummary();
 }
-$("addRecipeIngredient").onclick=addRecipeIngredient;
+$("addRecipeIngredient").type="button";$("addRecipeIngredient").addEventListener("click",event=>{event.preventDefault();event.stopPropagation();addRecipeIngredient()});
 $("recipeTotalPortions").addEventListener("input",updateRecipeWeightSummary);
 
 function addItem(){let name=$("foodItemName").value.trim();if(!name){alert("Γράψε το τρόφιμο.");return}if(num("itemWeight")==null){alert("Συμπλήρωσε το βάρος του τροφίμου σε γραμμάρια.");return}let it={name,type:$("foodItemType").value,carbs:num("itemCarbs"),plannedWeight:num("itemWeight"),consumedWeight:num("itemConsumedWeight"),weight:num("itemWeight"),vessel:$("itemVessel").value,vesselDiameter:num("itemVesselDiameter"),sugars:num("itemSugars"),sat:num("itemSat"),fiber:num("itemFiber"),salt:num("itemSalt")};mealItems.push(it);rememberFood(it);$("foodItemName").value="";foodSuggestionsOpen=false;drawFoodSuggestions(false);["itemCarbs","itemWeight","itemConsumedWeight","itemVesselDiameter","itemSugars","itemSat","itemFiber","itemSalt"].forEach(id=>$(id).value="");$("itemVessel").value="";drawMealItems()}
