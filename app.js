@@ -27,7 +27,7 @@ function save(){
  saveQueue=saveQueue.then(operation,operation);return saveQueue;
 }
 const num=id=>{let v=parseFloat($(id).value);return Number.isFinite(v)&&v>=0?v:null};
-const val=(v)=>typeof v==="number"&&Number.isFinite(v)&&v>=0?v:null;
+const val=(v)=>{if(v===null||v===undefined||v==="")return null;const n=Number(v);return Number.isFinite(n)&&n>=0?n:null};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function tab(name){document.querySelectorAll("main>section").forEach(s=>s.classList.toggle("hidden",s.id!=="tab-"+name));document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===name))}
 document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>tab(b.dataset.tab));
@@ -69,11 +69,33 @@ function checkProductValues(p){
 
  return warnings;
 }
+function pointsAbove(value,thresholds){return thresholds.reduce((sum,t)=>sum+(Number(value)>t?1:0),0)}
+function nutriScore2023(p){
+ const required=[p.energyKj,p.sugars,p.sat,p.salt];
+ if(required.some(v=>v==null||!Number.isFinite(Number(v))||Number(v)<0))
+  return {score:null,grade:null,reason:"Λείπουν υποχρεωτικά στοιχεία (ενέργεια kJ, σάκχαρα, κορεσμένα ή αλάτι)."};
+ const energy=Number(p.energyKj),sugars=Number(p.sugars),sat=Number(p.sat),salt=Number(p.salt);
+ const nEnergy=pointsAbove(energy,[335,670,1005,1340,1675,2010,2345,2680,3015,3350]);
+ const nSat=pointsAbove(sat,[1,2,3,4,5,6,7,8,9,10]);
+ const nSugar=pointsAbove(sugars,[3.4,6.8,10,14,17,20,24,27,31,34,37,41,44,48,51]);
+ const nSalt=pointsAbove(salt,[.2,.4,.6,.8,1,1.2,1.4,1.6,1.8,2,2.2,2.4,2.6,2.8,3,3.2,3.4,3.6,3.8,4]);
+ const N=nEnergy+nSat+nSugar+nSalt;
+ const fiber=p.fiber==null?0:Number(p.fiber);
+ const protein=p.protein==null?0:Number(p.protein);
+ const fruit=p.fruitVegPercent==null?0:Number(p.fruitVegPercent);
+ const fiberPoints=pointsAbove(fiber,[3,4.1,5.2,6.3,7.4]);
+ const proteinPoints=pointsAbove(protein,[2.4,4.8,7.2,9.6,12,14,17]);
+ const fruitPoints=fruit>80?5:fruit>60?2:fruit>40?1:0;
+ const P=fiberPoints+proteinPoints+fruitPoints;
+ const score=N>=11?N-fiberPoints-fruitPoints:N-P;
+ const grade=score<=-1?"A":score<=2?"B":score<=10?"C":score<=18?"D":"E";
+ return {score,grade,N,P,nEnergy,nSat,nSugar,nSalt,fiberPoints,proteinPoints,fruitPoints,
+  reason:"Υπολογισμός Nutri-Score 2023 για γενικά τρόφιμα. Για ειδικές κατηγορίες (π.χ. ποτά, τυριά, λίπη/ξηρούς καρπούς και κόκκινο κρέας) απαιτούνται ξεχωριστοί κανόνες."};
+}
 function assess(p,portion=100){
  const warnings=checkProductValues(p);
  const data={...p};
  Object.keys(warnings).forEach(field=>{data[field]=null});
-
  const valid=v=>v!=null&&Number.isFinite(Number(v))&&Number(v)>=0;
  const per=v=>valid(v)?Number(v)*portion/100:null;
  const carbs=per(data.carbs),sugars=per(data.sugars);
@@ -81,11 +103,7 @@ function assess(p,portion=100){
  const sat=per(data.sat),trans=per(data.trans);
  const notes=[];
  const clamp=n=>Math.max(0,Math.min(100,Math.round(n)));
-
- const diabetes=carbs==null?null:clamp(
-  carbs<=5?5:carbs<=10?15:carbs<=15?28:carbs<=20?42:carbs<=30?60:carbs<=45?80:95
- );
-
+ const diabetes=carbs==null?null:clamp(carbs<=5?5:carbs<=10?15:carbs<=15?28:carbs<=20?42:carbs<=30?60:carbs<=45?80:95);
  let triglycerides=null;
  if(carbs!=null){
   let t=carbs<=10?8:carbs<=20?22:carbs<=30?40:carbs<=45?60:82;
@@ -93,87 +111,49 @@ function assess(p,portion=100){
   if(Number(data.novaGroup)>=3)t+=8;
   triglycerides=clamp(t);
  }
-
  let cholesterol=null;
  if(sat!=null||trans!=null){
-  const s=sat==null?0:sat;
-  const t=trans==null?0:trans;
+  const s=sat==null?0:sat,t=trans==null?0:trans;
   const base=s<=1?5:s<=2?18:s<=3?32:s<=5?52:s<=7?72:90;
   cholesterol=clamp(base+(t>0?Math.min(25,t*100):0));
  }
-
- if(diabetes!=null&&diabetes>=67)
-  notes.push("Αυξημένοι συνολικοί υδατάνθρακες στη μερίδα.");
- if(triglycerides!=null&&triglycerides>=67)
-  notes.push("Αυξημένη επιβάρυνση από υδατάνθρακες/σάκχαρα στη μερίδα.");
- if(cholesterol!=null&&cholesterol>=67)
-  notes.push("Υψηλή επιβάρυνση από κορεσμένα ή/και trans λιπαρά.");
- if(valid(data.fiber)&&per(data.fiber)>=3)
-  notes.push("Οι φυτικές ίνες είναι θετικό στοιχείο, αλλά δεν αφαιρούν τεχνητά την επιβάρυνση.");
- if(valid(data.protein)&&per(data.protein)>=10)
-  notes.push("Καλή ποσότητα πρωτεΐνης στη μερίδα.");
- if(valid(data.salt)&&data.salt>1.5)
-  notes.push("Υψηλή περιεκτικότητα σε αλάτι ανά 100 g.");
-
- let quality=100,qualityReasons=[];
+ if(diabetes!=null&&diabetes>=67)notes.push("Αυξημένοι συνολικοί υδατάνθρακες στη μερίδα.");
+ if(triglycerides!=null&&triglycerides>=67)notes.push("Αυξημένη επιβάρυνση από υδατάνθρακες/σάκχαρα στη μερίδα.");
+ if(cholesterol!=null&&cholesterol>=67)notes.push("Υψηλή επιβάρυνση από κορεσμένα ή/και trans λιπαρά.");
+ if(valid(data.fiber)&&per(data.fiber)>=3)notes.push("Οι φυτικές ίνες είναι θετικό στοιχείο.");
+ if(valid(data.protein)&&per(data.protein)>=10)notes.push("Καλή ποσότητα πρωτεΐνης στη μερίδα.");
+ if(valid(data.salt)&&data.salt>1.5)notes.push("Υψηλή περιεκτικότητα σε αλάτι ανά 100 g.");
  const nova=Number(data.novaGroup);
-
- if(nova===4){
-  quality-=15;
-  qualityReasons.push("NOVA 4: υπερεπεξεργασμένο προϊόν (ενδεικτική αφαίρεση 15 μονάδων).");
- }else if(nova===3){
-  quality-=6;
-  qualityReasons.push("NOVA 3: επεξεργασμένο προϊόν (ενδεικτική αφαίρεση 6 μονάδων).");
- }
-
  const ing=String(data.ingredients||"").toLocaleLowerCase("el");
- const confirmedTrans=valid(p.trans)&&Number(p.trans)>0;
- const ingredientTrans=/trans\s*fat/.test(ing);
+ const confirmedTrans=valid(data.trans)&&Number(data.trans)>0;
+ const ingredientTrans=/trans\\s*fat/.test(ing);
  const partiallyHydrogenated=/μερικώς υδρογονωμέν|partially hydrogenated/.test(ing);
- const explicitTrans=confirmedTrans||ingredientTrans||partiallyHydrogenated;
  const forbiddenReasons=[];
- if(nova===4) forbiddenReasons.push("Υπερεπεξεργασμένο προϊόν (NOVA 4).");
- if(confirmedTrans||ingredientTrans) forbiddenReasons.push("Περιέχει trans λιπαρά.");
- else if(partiallyHydrogenated) forbiddenReasons.push("Περιέχει μερικώς υδρογονωμένα λιπαρά.");
-
- if(explicitTrans){
-  quality-=20;
-  qualityReasons.push(confirmedTrans||ingredientTrans?"Εντοπίστηκαν trans λιπαρά.":"Εντοπίστηκαν μερικώς υδρογονωμένα λιπαρά στα συστατικά.");
- }
- if(/σιρόπι γλυκόζης|σιρόπι φρουκτόζης|glucose syrup|fructose syrup/.test(ing)){
-  quality-=5;
-  qualityReasons.push("Περιλαμβάνει σιρόπι πρόσθετων σακχάρων.");
- }
-
- quality=clamp(quality);
-
- const known=[
-  data.carbs,data.sugars,data.sat,data.salt,
-  data.fiber,data.fat,data.protein,data.trans
- ].filter(valid).length;
-
- const confidence=known>=6?"Καλή":known>=4?"Μέτρια":"Χαμηλή";
-
+ if(nova===4)forbiddenReasons.push("Υπερεπεξεργασμένο προϊόν (NOVA 4).");
+ if(confirmedTrans||ingredientTrans)forbiddenReasons.push("Περιέχει trans λιπαρά.");
+ else if(partiallyHydrogenated)forbiddenReasons.push("Περιέχει μερικώς υδρογονωμένα λιπαρά.");
+ const nutri=nutriScore2023(data);
+ const gradeLabels={A:"Πολύ καλή διατροφική ποιότητα",B:"Καλή διατροφική ποιότητα",C:"Μέτρια διατροφική ποιότητα",D:"Χαμηλή διατροφική ποιότητα",E:"Πολύ χαμηλή διατροφική ποιότητα"};
+ const qualityReasons=[];
+ if(nutri.score!=null){
+  qualityReasons.push("Αρνητικοί βαθμοί N: "+nutri.N+" (ενέργεια "+nutri.nEnergy+", κορεσμένα "+nutri.nSat+", σάκχαρα "+nutri.nSugar+", αλάτι "+nutri.nSalt+").");
+  qualityReasons.push("Θετικοί βαθμοί P: "+nutri.P+" (ίνες "+nutri.fiberPoints+", πρωτεΐνη "+nutri.proteinPoints+", φρούτα/λαχανικά/όσπρια "+nutri.fruitPoints+").");
+  if(data.fiber==null)notes.push("Δεν υπάρχουν στοιχεία φυτικών ινών· δεν αποδόθηκαν θετικοί βαθμοί ινών.");
+  if(data.fruitVegPercent==null)notes.push("Δεν υπάρχει εκτίμηση ποσοστού φρούτων/λαχανικών/οσπρίων· δεν αποδόθηκαν σχετικοί θετικοί βαθμοί.");
+ }else notes.push(nutri.reason);
+ if(nova===4)qualityReasons.push("NOVA 4: υπερεπεξεργασμένο προϊόν — ξεχωριστός κανόνας απαγόρευσης.");
+ if(confirmedTrans||ingredientTrans)qualityReasons.push("Εντοπίστηκαν trans λιπαρά — ξεχωριστός κανόνας απαγόρευσης.");
+ if(partiallyHydrogenated)qualityReasons.push("Εντοπίστηκαν μερικώς υδρογονωμένα λιπαρά στα συστατικά — ξεχωριστός κανόνας απαγόρευσης.");
+ const known=[data.energyKj,data.carbs,data.sugars,data.sat,data.salt,data.fiber,data.fat,data.protein,data.trans,data.novaGroup].filter(valid).length;
+ const confidence=known>=7?"Καλή":known>=5?"Μέτρια":"Χαμηλή";
  if(!valid(data.carbs))notes.push("Δεν υπάρχουν αξιόπιστα στοιχεία υδατανθράκων.");
- if(!valid(data.sat)&&!valid(data.trans))
-  notes.push("Δεν υπάρχουν αξιόπιστα στοιχεία κορεσμένων ή trans λιπαρών.");
-
+ if(!valid(data.sat)&&!valid(data.trans))notes.push("Δεν υπάρχουν αξιόπιστα στοιχεία κορεσμένων ή trans λιπαρών.");
  return {
-  score:quality,
-  level:quality>=75?"risk-low":quality>=50?"risk-mid":"risk-high",
-  confidence,notes,
-  portionCarbs:carbs,
-  portionSat:sat,
-  portionTrans:trans,
-  portionProtein:per(data.protein),
-  known,
-  diabetesScore:diabetes,
-  triglyceridesScore:triglycerides,
-  cholesterolScore:cholesterol,
-  sugarsScore:sugarImpact,
-  qualityReasons,
-forbiddenReasons,
-warnings
+  score:nutri.score,grade:nutri.grade,gradeLabel:gradeLabels[nutri.grade]||"Δεν υπολογίστηκε",
+  level:nutri.grade==="A"||nutri.grade==="B"?"risk-low":nutri.grade==="C"?"risk-mid":"risk-high",
+  confidence,notes,portionCarbs:carbs,portionSat:sat,portionTrans:trans,portionProtein:per(data.protein),known,
+  diabetesScore:diabetes,triglyceridesScore:triglycerides,cholesterolScore:cholesterol,sugarsScore:sugarImpact,
+  qualityReasons,forbiddenReasons,warnings
  };
 }
 function barHTML(label,value,reason){
@@ -182,8 +162,8 @@ function barHTML(label,value,reason){
  return `<div class="impact"><div class="impact-head"><b>${label}</b><span>${value}/100 · ${value<=33?'Χαμηλή':value<=66?'Μέτρια':'Υψηλή'} επιβάρυνση</span></div><div class="impact-track"><span class="impact-marker" style="left:${value}%;--marker-color:${color}"></span></div><p class="muted">${reason}</p></div>`;
 }
 function resultHTML(p,portion,r){
- const scoreText=r.score==null?"Δεν υπολογίστηκε":r.score+"/100";
- const qualityLabel=r.score==null?"Ανεπαρκή στοιχεία":r.score>=85?"Πολύ καλή ποιότητα":r.score>=70?"Καλή ποιότητα":r.score>=50?"Μέτρια ποιότητα":"Χαμηλή ποιότητα";
+ const scoreText=r.score==null?"Nutri-Score: μη διαθέσιμο":`Nutri-Score ${r.grade} · ${r.score} βαθμοί`;
+ const qualityLabel=r.gradeLabel||"Ανεπαρκή στοιχεία";
 
  const valueHTML=(field,value,unit="g")=>{
   const warning=r.warnings?.[field];
@@ -193,9 +173,9 @@ function resultHTML(p,portion,r){
  return `<div class="result ${r.level}">
  <div class="scoreline"><div class="score">${scoreText}</div><div><b>${qualityLabel}</b><br><span class="pill">Ποιότητα δεδομένων: ${r.confidence}</span></div></div>
  ${r.forbiddenReasons?.length?'<div style="background:#ffebee;border:2px solid #c62828;color:#b71c1c;padding:12px;margin:12px 0;border-radius:8px;font-size:20px;font-weight:900;text-align:center;">⛔ ΑΚΑΤΑΛΛΗΛΟ ΠΡΟΣ ΚΑΤΑΝΑΛΩΣΗ</div><ul style="color:#b71c1c;font-weight:700;">'+r.forbiddenReasons.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>":""}
- <div class="meter"><span style="width:${r.score??0}%"></span></div><b>${esc(p.name||"Τρόφιμο")}</b>
- <h3>Ποιότητα προϊόντος</h3>
- <p>Η βαθμολογία ξεκινά από 100 και αφαιρεί μονάδες για συγκεκριμένα αρνητικά χαρακτηριστικά. Δεν προστίθενται μονάδες για πρωτεΐνη ή ίνες.</p>
+ <b>${esc(p.name||"Τρόφιμο")}</b>
+ <h3>Γενική διατροφική ποιότητα</h3>
+ <p>Υπολογισμός βάσει Nutri-Score 2023 ανά 100 g. Η βαθμολογία είναι οι επίσημοι βαθμοί του αλγορίθμου και όχι ποσοστό /100. Η εφαρμογή διακρίνει την άγνωστη πληροφορία από το μηδέν.</p>
  ${r.qualityReasons?.length?"<ul>"+r.qualityReasons.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>":"<p class='muted'>Δεν εντοπίστηκε καταχωρισμένος παράγοντας αφαίρεσης.</p>"}
  <h3>Επιβάρυνση στη μερίδα των ${portion} g</h3>
  ${barHTML("Διαβήτης",r.diabetesScore,`Συνολικοί υδατάνθρακες: ${r.portionCarbs==null?"—":r.portionCarbs.toFixed(1)+" g"} στη μερίδα.`)}
@@ -203,10 +183,10 @@ function resultHTML(p,portion,r){
  ${barHTML("Τριγλυκερίδια",r.triglyceridesScore,"Συνεκτιμώνται οι υδατάνθρακες, τα σάκχαρα και η ένδειξη επεξεργασίας όπου είναι γνωστή.")}
  ${barHTML("Χοληστερίνη",r.cholesterolScore,`Κορεσμένα λιπαρά: ${r.portionSat==null?"—":r.portionSat.toFixed(1)+" g"} · Trans λιπαρά: ${r.portionTrans==null?"—":r.portionTrans.toFixed(2)+" g"} στη μερίδα.`)}
  <h3>Διατροφικά στοιχεία ανά 100 g</h3>
- <p>Υδατάνθρακες: ${valueHTML("carbs",p.carbs)} · Σάκχαρα: ${valueHTML("sugars",p.sugars)} · Πρωτεΐνες: ${valueHTML("protein",p.protein)}.</p>
+ <p>Ενέργεια: ${valueHTML("energyKj",p.energyKj,"kJ")} · Υδατάνθρακες: ${valueHTML("carbs",p.carbs)} · Σάκχαρα: ${valueHTML("sugars",p.sugars)} · Πρωτεΐνες: ${valueHTML("protein",p.protein)}.</p>
 <p>Συνολικά λιπαρά: ${valueHTML("fat",p.fat)} · Κορεσμένα: ${valueHTML("sat",p.sat)} · <strong style="${Number(p.trans)>0?'color:#d00000;font-weight:900':''}">Trans: ${valueHTML("trans",p.trans)}</strong> · Ίνες: ${valueHTML("fiber",p.fiber)} · Αλάτι: ${valueHTML("salt",p.salt)}.</p> <h3>Συστατικά και επεξεργασία</h3>
  <p>${esc(p.ingredients||"Δεν καταχωρίστηκε λίστα συστατικών.")}</p>
- <p>Κατηγορία NOVA: ${valueHTML("novaGroup",p.novaGroup,"")} · Πρόσθετα: ${esc(p.additives||"Δεν υπάρχουν διαθέσιμα στοιχεία.")}</p>
+ <p>Ποσοστό φρούτων/λαχανικών/οσπρίων: ${valueHTML("fruitVegPercent",p.fruitVegPercent,"%")} · Κατηγορία NOVA: ${valueHTML("novaGroup",p.novaGroup,"")} · Πρόσθετα: ${esc(p.additives||"Δεν υπάρχουν διαθέσιμα στοιχεία.")}</p>
  ${r.notes.length?"<b>Παρατηρήσεις</b><ul>"+r.notes.map(n=>"<li>"+esc(n)+"</li>").join("")+"</ul>":""}
  <p class="muted">Οι μπάρες είναι ενδεικτικές διατροφικές ενδείξεις και όχι ιατρική οδηγία. Τα πρόσθετα Ε δεν τιμωρούνται αυτομάτως: απαιτείται αξιολόγηση της συγκεκριμένης ουσίας και της χρήσης της.</p>
  </div>`;
@@ -220,12 +200,12 @@ function assessMeal(p,portion=100){
  // Δεν παρουσιάζεται ως συνολική ποιότητα όταν λείπουν τα υπόλοιπα στοιχεία.
  return {score:Math.max(0,Math.min(69,Math.round(100-(portionCarbs*1.2))))};
 }
-function currentProduct(){return {name:$("pname").value.trim()||"Χειροκίνητο προϊόν",code:$("barcode").value.trim(),carbs:num("carbs"),sugars:num("sugars"),fat:num("fat"),sat:num("sat"),fiber:num("fiber"),salt:num("salt"),protein:num("protein"),ingredients:$("ingredients").value.trim(),novaGroup:num("novaGroup"),additives:$("additives").value.trim(),trans:num("trans")}}
-function showProduct(p,saveHistory=true){lastProduct=p;let portion=num("portion")||50,r=assess(p,portion);$("productResult").innerHTML=resultHTML(p,portion,r);if(saveHistory){history.unshift({name:p.name,portion,date:new Date().toLocaleString("el-GR"),product:p,score:r.score});history=history.slice(0,40);save();drawProductLists()}}
+function currentProduct(){return {name:$("pname").value.trim()||"Χειροκίνητο προϊόν",code:$("barcode").value.trim(),energyKj:num("energyKj"),carbs:num("carbs"),sugars:num("sugars"),fat:num("fat"),sat:num("sat"),fiber:num("fiber"),salt:num("salt"),protein:num("protein"),fruitVegPercent:num("fruitVegPercent"),ingredients:$("ingredients").value.trim(),novaGroup:num("novaGroup"),additives:$("additives").value.trim(),trans:num("trans")}}
+function showProduct(p,saveHistory=true){lastProduct=p;let portion=num("portion")||50,r=assess(p,portion);$("productResult").innerHTML=resultHTML(p,portion,r);if(saveHistory){history.unshift({name:p.name,portion,date:new Date().toLocaleString("el-GR"),product:p,score:r.score,grade:r.grade});history=history.slice(0,40);save();drawProductLists()}}
 $("rateProduct").onclick=()=>{let p=currentProduct();if(Object.values(p).filter(v=>typeof v==="number").length===0){alert("Συμπλήρωσε τουλάχιστον ένα διατροφικό στοιχείο.");return}showProduct(p)};
 $("saveFav").onclick=()=>{let p=lastProduct||currentProduct();if(!p.name){alert("Πρώτα αξιολόγησε ή συμπλήρωσε ένα προϊόν.");return}if(!favorites.some(x=>x.code===p.code&&x.name===p.name)){favorites.unshift(p);save();drawProductLists()}};
 function drawProductLists(){
- $("productHistory").innerHTML=history.length?history.map((h,i)=>`<div class="item"><b>${esc(h.name)}</b> <span class="pill">${esc(h.date||"")}</span><br><span class="muted">Μερίδα ${h.portion||"—"} g · Βαθμολογία ${h.score??"—"}/100</span> <button class="secondary small" data-h="${i}">Προβολή</button></div>`).join(""):"Δεν υπάρχουν καταχωρίσεις.";
+ $("productHistory").innerHTML=history.length?history.map((h,i)=>`<div class="item"><b>${esc(h.name)}</b> <span class="pill">${esc(h.date||"")}</span><br><span class="muted">Μερίδα ${h.portion||"—"} g · Nutri-Score ${h.grade??"—"} (${h.score??"—"} βαθμοί)</span> <button class="secondary small" data-h="${i}">Προβολή</button></div>`).join(""):"Δεν υπάρχουν καταχωρίσεις.";
 $("productHistory").querySelectorAll("[data-h]").forEach(b=>b.onclick=e=>{
  e.preventDefault();
  const h=history[+b.dataset.h];
@@ -240,8 +220,8 @@ $("productHistory").querySelectorAll("[data-h]").forEach(b=>b.onclick=e=>{
  $("productFavorites").querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{favorites.splice(+b.dataset.r,1);save();drawProductLists()});
 }
 
-function fillProduct(p){$("pname").value=p.name||"";$("barcode").value=p.code||"";for(let k of ["carbs","sugars","fat","sat","fiber","salt","protein","trans","novaGroup"])$(k).value=p[k]??"";$("ingredients").value=p.ingredients||"";$("additives").value=p.additives||""}
-$("lookupBtn").onclick=async()=>{let code=$("barcode").value.replace(/\D/g,"");if(!code){alert("Πληκτρολόγησε barcode.");return}let b=$("lookupBtn");b.disabled=true;b.textContent="Αναζήτηση…";try{let res=await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`);if(!res.ok)throw 0;let d=await res.json();if(d.status!==1)throw 1;let x=d.product,n=x.nutriments||{};let p={code,name:x.product_name_el||x.product_name||x.generic_name||"Άγνωστο προϊόν",carbs:val(n.carbohydrates_100g),sugars:val(n.sugars_100g),fat:val(n.fat_100g),sat:val(n["saturated-fat_100g"]),fiber:val(n.fiber_100g),salt:val(n.salt_100g),protein:val(n.proteins_100g),ingredients:x.ingredients_text_el||x.ingredients_text||"",novaGroup:val(x.nova_group),additives:(x.additives_tags||[]).map(t=>t.replace(/^en:/,"" )).join(", "),trans:val(n["trans-fat_100g"])};fillProduct(p);showProduct(p)}catch(e){alert(e===1?"Δεν βρέθηκε το προϊόν.":"Αποτυχία σύνδεσης με τη βάση. Δοκίμασε ξανά ή κάνε χειροκίνητη καταχώριση.")}finally{b.disabled=false;b.textContent="Αναζήτηση προϊόντος"}};
+function fillProduct(p){$("pname").value=p.name||"";$("barcode").value=p.code||"";for(let k of ["energyKj","carbs","sugars","fat","sat","fiber","salt","protein","fruitVegPercent","trans","novaGroup"])$(k).value=p[k]??"";$("ingredients").value=p.ingredients||"";$("additives").value=p.additives||""}
+$("lookupBtn").onclick=async()=>{let code=$("barcode").value.replace(/\D/g,"");if(!code){alert("Πληκτρολόγησε barcode.");return}let b=$("lookupBtn");b.disabled=true;b.textContent="Αναζήτηση…";try{let res=await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`);if(!res.ok)throw 0;let d=await res.json();if(d.status!==1)throw 1;let x=d.product,n=x.nutriments||{};const novaRaw=x.nova_group??x.nova_groups??n["nova-group_100g"]??n["nova-group"]??(Array.isArray(x.nova_groups_tags)?(x.nova_groups_tags.find(t=>/^en:[1-4]-/.test(t))||"").match(/^en:([1-4])-/)?.[1]:null);const fruitRaw=x["fruits-vegetables-nuts-estimate-from-ingredients_100g"]??x["fruits-vegetables-legumes-estimate-from-ingredients_100g"];let p={code,name:x.product_name_el||x.product_name||x.generic_name||"Άγνωστο προϊόν",energyKj:val(n["energy-kj_100g"])??(val(n["energy-kcal_100g"])==null?null:val(n["energy-kcal_100g"])*4.184),carbs:val(n.carbohydrates_100g),sugars:val(n.sugars_100g),fat:val(n.fat_100g),sat:val(n["saturated-fat_100g"]),fiber:val(n.fiber_100g),salt:val(n.salt_100g),protein:val(n.proteins_100g),fruitVegPercent:val(fruitRaw),ingredients:x.ingredients_text_el||x.ingredients_text||"",novaGroup:val(novaRaw),additives:(x.additives_tags||[]).map(t=>t.replace(/^en:/,"" )).join(", "),trans:val(n["trans-fat_100g"]??n["trans_fat_100g"])};fillProduct(p);showProduct(p)}catch(e){alert(e===1?"Δεν βρέθηκε το προϊόν.":"Αποτυχία σύνδεσης με τη βάση. Δοκίμασε ξανά ή κάνε χειροκίνητη καταχώριση.")}finally{b.disabled=false;b.textContent="Αναζήτηση προϊόντος"}};
 
 
 $("scanBtn").onclick=async()=>{
