@@ -76,7 +76,7 @@ jobs:
             storeFile file(System.getenv("FOODCHECK_KEYSTORE_PATH"))
             storePassword System.getenv("FOODCHECK_RELEASE_STORE_PASSWORD")
             keyAlias System.getenv("FOODCHECK_RELEASE_KEY_ALIAS")
-            keyPassword System.getenv("FOODCHECK_RELEASE_STORE_PASSWORD")
+            keyPassword System.getenv("FOODCHECK_RELEASE_KEY_PASSWORD")
         }
     }
 
@@ -94,6 +94,7 @@ jobs:
         env:
           FOODCHECK_KEYSTORE_PATH: ${{ runner.temp }}/foodcheck-signing/foodcheck-release.keystore
           FOODCHECK_RELEASE_STORE_PASSWORD: ${{ secrets.FOODCHECK_RELEASE_STORE_PASSWORD }}
+          FOODCHECK_RELEASE_KEY_PASSWORD: ${{ secrets.FOODCHECK_RELEASE_KEY_PASSWORD }}
           FOODCHECK_RELEASE_KEY_ALIAS: ${{ secrets.FOODCHECK_RELEASE_KEY_ALIAS }}
         run: ./gradlew assembleRelease
 
