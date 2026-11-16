@@ -108,8 +108,31 @@ footer{max-width:850px;margin:auto;padding:0 16px 25px;color:#65736c;font-size:.
 <div class="actions"><button class="secondary" id="addFood">Προσθήκη στο γεύμα</button></div>
 <div id="mealItems"></div>
 
-<label for="method">Τρόπος παρασκευής / λάδι / υλικά που δεν φαίνονται</label><textarea id="method" rows="2" placeholder="π.χ. 1 κουταλιά ελαιόλαδο, ψητό χωρίς πέτσα"></textarea>
-<h3>3. Ταχεία ινσουλίνη που πραγματικά χορηγήθηκε</h3>
+<h3>3. Υλικά συνταγής</h3>
+<p class="muted">Καταχώρισε κάθε υλικό της κατσαρόλας ή του ταψιού ξεχωριστά. Οι κουταλιές μετατρέπονται σε ενδεικτικά γραμμάρια μόνο για ελαιόλαδο, αλάτι και πιπέρι.</p>
+<div class="grid">
+<div><label for="recipeName">Υλικό</label><input id="recipeName" placeholder="π.χ. ελαιόλαδο, πατάτες, κρεμμύδι"></div>
+<div><label for="recipeQty">Ποσότητα</label><input id="recipeQty" type="number" min="0" step="0.1" placeholder="π.χ. 2"></div>
+<div><label for="recipeUnit">Μονάδα</label><select id="recipeUnit"><option value="g">Γραμμάρια (g)</option><option value="kg">Κιλά (kg)</option><option value="tbsp">Κουταλιά σούπας</option><option value="tsp">Κουταλάκι γλυκού</option><option value="piece">Τεμάχια</option><option value="ml">Χιλιοστόλιτρα (ml)</option><option value="l">Λίτρα (L)</option></select></div>
+<div><label for="recipeEnergy">Ενέργεια (kJ/100g)</label><input id="recipeEnergy" type="number" min="0" step="1"></div>
+<div><label for="recipeCarbs">Υδατάνθρακες (g/100g)</label><input id="recipeCarbs" type="number" min="0" step=".1"></div>
+<div><label for="recipeSugars">Σάκχαρα (g/100g)</label><input id="recipeSugars" type="number" min="0" step=".1"></div>
+<div><label for="recipeFat">Λιπαρά (g/100g)</label><input id="recipeFat" type="number" min="0" step=".1"></div>
+<div><label for="recipeSat">Κορεσμένα (g/100g)</label><input id="recipeSat" type="number" min="0" step=".1"></div>
+<div><label for="recipeFiber">Ίνες (g/100g)</label><input id="recipeFiber" type="number" min="0" step=".1"></div>
+<div><label for="recipeSalt">Αλάτι (g/100g)</label><input id="recipeSalt" type="number" min="0" step=".01"></div>
+<div><label for="recipeProtein">Πρωτεΐνη (g/100g)</label><input id="recipeProtein" type="number" min="0" step=".1"></div>
+<div><label for="recipeTrans">Trans (g/100g)</label><input id="recipeTrans" type="number" min="0" step=".01"></div>
+</div>
+<div class="actions"><button class="secondary" id="addRecipeIngredient">Προσθήκη υλικού στη συνταγή</button></div>
+<div id="recipeItems"></div>
+<div class="grid">
+<div><label for="recipeTotalPortions">Μερίδες που προκύπτουν από τη συνταγή</label><input id="recipeTotalPortions" type="number" min="1" step="1" value="1"></div>
+<div><label for="recipeConsumedPortions">Μερίδες που κατανάλωσα</label><input id="recipeConsumedPortions" type="number" min="0" step="0.25" value="1"></div>
+</div>
+<p class="muted">Τα θρεπτικά στοιχεία της συνταγής θα υπολογίζονται αναλογικά με τις μερίδες που δηλώνεις. Το πραγματικό βάρος της δικής σου μερίδας καταχωρίζεται ξεχωριστά πιο κάτω.</p>
+<label for="method">Σημειώσεις παρασκευής</label><textarea id="method" rows="2" placeholder="π.χ. βράσιμο, ψήσιμο, αφαίρεση πέτσας"></textarea>
+<h3>4. Ταχεία ινσουλίνη που πραγματικά χορηγήθηκε</h3>
 <div class="grid">
 <div><label for="rapidDose">Πραγματική δόση (μονάδες)</label><input id="rapidDose" type="number" min="0" step=".5"></div>
 <div><label for="rapidTime">Ώρα χορήγησης</label><input id="rapidTime" type="time"></div>
@@ -149,5 +172,5 @@ footer{max-width:850px;margin:auto;padding:0 16px 25px;color:#65736c;font-size:.
 <footer><strong>Έκδοση ελέγχου Android 16/11/2026-4</strong><br>Το FoodCheck είναι ενημερωτικό εργαλείο και όχι ιατρική συσκευή ή ιατρική οδηγία. Δεν διαγιγνώσκει, δεν προτείνει δόσεις ινσουλίνης και δεν αντικαθιστά τον γιατρό. Οι φωτογραφίες δεν προσδιορίζουν με ακρίβεια βάρος, λάδι ή κρυφά υλικά· οι εκτιμήσεις χρειάζονται επιβεβαίωση. Τα δεδομένα αποθηκεύονται τοπικά στη συσκευή και δεν συγχρονίζονται αυτόματα.</footer>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
-<script src="./app.js?v=20261116-6"></script>
+<script src="./app.js?v=20261116-7"></script>
 </body></html>
