@@ -40,8 +40,16 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Prepare web app
-        run: npm run build:web
+      - name: Validate JavaScript and prepare web app
+        run: |
+          node --check app.js
+          npm run build:web
+          test -s www/libs/html5-qrcode.min.js
+          test -s www/libs/zxing.min.js
+          if grep -E 'https?://(unpkg.com|cdn.jsdelivr.net)' www/index.html; then
+            echo "Unexpected external CDN reference in the Android app"
+            exit 1
+          fi
 
       - name: Create Android project
         run: npx cap add android
