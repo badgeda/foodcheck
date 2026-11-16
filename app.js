@@ -331,8 +331,7 @@ function recipeWeight(item){
  const q=Number(item.quantity)||0,u=item.unit;
  if(u==="g")return q;
  if(u==="kg")return q*1000;
- if(u==="ml")return q;
- if(u==="l")return q*1000;
+ if(u==="ml"||u==="l"){const ml=q*(u==="l"?1000:1);if(/νερο|νερό/.test(n))return ml;if(/ελαιολαδ|λαδι/.test(n))return ml*0.91;return null;}
  const n=foodKey(item.name);
  if(/ελαιολαδ|λαδι/.test(n))return q*(u==="tbsp"?13.5:u==="tsp"?4.5:null);
  if(/αλατι/.test(n))return q*(u==="tbsp"?18:u==="tsp"?6:null);
@@ -371,8 +370,8 @@ function mealScoreLabel(m){return m.score==null?"Δεν υπολογίστηκε
 function mealDetailsHTML(m){const items=Array.isArray(m.items)?m.items:[];return `<div class="meal-details"><h3>Αναλυτική σύνθεση γεύματος</h3>${items.length?items.map((x,i)=>`<div class="item"><b>${i+1}. ${esc(x.name||"Τρόφιμο χωρίς ονομασία")}</b> <span class="pill">${esc(x.type||"Χωρίς κατηγορία")}</span><p>Προγραμματισμένη ποσότητα: ${x.plannedWeight??x.weight??"—"} g · Πραγματικά καταναλωμένη: ${x.consumedWeight??"Δεν καταγράφηκε"} g</p><p>Σκεύος: ${esc(x.vessel||"Δεν καταγράφηκε")} · Διάμετρος: ${x.vesselDiameter!=null?esc(x.vesselDiameter)+" cm":"Δεν καταγράφηκε"}</p><p class="muted">Ανά 100 g: Υδατάνθρακες ${x.carbs??"—"} g · Σάκχαρα ${x.sugars??"—"} g · Κορεσμένα ${x.sat??"—"} g · Ίνες ${x.fiber??"—"} g · Αλάτι ${x.salt??"—"} g</p></div>`).join(""):`<p>Δεν υπάρχουν αποθηκευμένα επιμέρους τρόφιμα.</p>`}<h3>Στοιχεία γεύματος</h3><p>Τρόπος παρασκευής / πρόσθετα υλικά: ${esc(m.method||"Δεν καταγράφηκαν")}</p><p>Σάκχαρο πριν: ${m.preGlucose??"—"} mg/dL · Ώρα: ${esc(m.preTime||"—")} · Τάση CGM: ${esc(m.trend||"Δεν καταγράφηκε")}</p><p>Ταχεία ινσουλίνη που καταγράφηκε: ${m.rapidDose??"—"} μονάδες · Ώρα: ${esc(m.rapidTime||"—")}</p><p>Προγραμματισμένοι υδατάνθρακες: ${m.plannedCarbs==null?"Ανεπαρκή στοιχεία":m.plannedCarbs.toFixed(1)+" g"} · Καταναλωμένοι: ${m.consumedCarbs==null?"Δεν καταγράφηκαν πλήρως":m.consumedCarbs.toFixed(1)+" g"}</p><p>Βαθμολογία: ${mealScoreLabel(m)}</p>${m.post?.length?`<p>Μεταγευματικές μετρήσεις: ${m.post.map(p=>`+${p.after} ώρα: ${p.glucose} mg/dL`).join(" · ")}</p>`:""}</div>`}
 function mealHTML(m){let planned=m.plannedCarbs==null?"ελλιπή στοιχεία":m.plannedCarbs.toFixed(1)+" g",consumed=m.consumedCarbs==null?"δεν καταγράφηκε πλήρως":m.consumedCarbs.toFixed(1)+" g";return `<div class="result"><div class="score">${mealScoreLabel(m)}</div><b>${esc(m.name)}</b>${m.impact?`<h3>Ενδείξεις επιβάρυνσης γεύματος</h3>${barHTML("Διαβήτης",m.impact.diabetes,"Με βάση τους υπολογισμένους υδατάνθρακες του γεύματος.")}${barHTML("Τριγλυκερίδια",m.impact.triglycerides,"Με βάση τους διαθέσιμους υδατάνθρακες και τα σάκχαρα.")}${barHTML("Χοληστερίνη",m.impact.cholesterol,"Με βάση τα διαθέσιμα κορεσμένα λιπαρά.")}${barHTML("Σάκχαρα",m.impact.sugars,"Με βάση τα συνολικά γραμμάρια σακχάρων των προγραμματισμένων ποσοτήτων.")}`:""}<p>Προγραμματισμένοι υδατάνθρακες: ${planned}. Υδατάνθρακες από την καταναλωμένη ποσότητα: ${consumed}.</p><p>Σάκχαρο πριν: ${m.preGlucose??"—"} mg/dL (${esc(m.preTime||"χωρίς ώρα")}) · Ταχεία ινσουλίνη που καταγράφηκε: ${m.rapidDose??"—"} μονάδες (${esc(m.rapidTime||"χωρίς ώρα")}).</p><p>Συνολικό προγραμματισμένο βάρος τροφίμων: ${m.estimatedWeight??"—"} g</p><p class="muted">Η βαθμολογία είναι ενδεικτική και δεν αποτελεί ιατρική αξιολόγηση ή πρόβλεψη γλυκόζης.</p></div>`}
 async function saveJournal(m){journal.unshift(m);const ok=await save();drawJournal();if(!ok)$("mealResult").insertAdjacentHTML("beforeend",'<p class="muted">Προσοχή: η αποθήκευση στο ημερολόγιο δεν επιβεβαιώθηκε.</p>');return ok}
-$("analyzeMeal").onclick=async()=>{if(!mealItems.length){alert("Πρόσθεσε τουλάχιστον ένα τρόφιμο.");return}let m=mealPayload();lastMealResult=m;$("mealResult").innerHTML=mealHTML(m);await saveJournal(m)};
-$("saveMealTemplate").onclick=()=>{if(!mealItems.length){alert("Πρόσθεσε πρώτα τα τρόφιμα του γεύματος.");return}let m=mealPayload();mealLibrary.unshift({...m,id:"lib-"+m.id});save();drawLibrary();alert("Το γεύμα αποθηκεύτηκε στη βιβλιοθήκη.")};
+$("analyzeMeal").onclick=async()=>{if(!mealItems.length&&!recipeItems.length){alert("Πρόσθεσε τουλάχιστον ένα τρόφιμο ή υλικό συνταγής.");return}let m=mealPayload();lastMealResult=m;$("mealResult").innerHTML=mealHTML(m);await saveJournal(m)};
+$("saveMealTemplate").onclick=()=>{if(!mealItems.length&&!recipeItems.length){alert("Πρόσθεσε πρώτα τρόφιμα ή υλικά συνταγής.");return}let m=mealPayload();mealLibrary.unshift({...m,id:"lib-"+m.id});save();drawLibrary();alert("Το γεύμα αποθηκεύτηκε στη βιβλιοθήκη.")};
 function resetMealForm(){
  const ids=["mealName","preGlucose","preTime","method","rapidDose","rapidTime","foodItemName","itemWeight","itemConsumedWeight","itemVesselDiameter","itemCarbs","itemSugars","itemSat","itemFiber","itemSalt","recipeName","recipeQty","recipeEnergy","recipeCarbs","recipeSugars","recipeFat","recipeSat","recipeFiber","recipeSalt","recipeProtein","recipeTrans","actualMealWeight"];
  ids.forEach(id=>{const el=$(id);if(el)el.value=""});
@@ -387,7 +386,7 @@ function resetMealForm(){
  $("mealName").focus();
 }
 $("newMeal").onclick=()=>{
- const hasData=mealItems.length||["mealName","preGlucose","preTime","method","rapidDose","rapidTime","foodItemName","itemWeight","itemConsumedWeight","itemVessel","itemVesselDiameter"].some(id=>$(id).value.trim());
+ const hasData=mealItems.length||recipeItems.length||["mealName","preGlucose","preTime","method","rapidDose","rapidTime","foodItemName","itemWeight","itemConsumedWeight","itemVessel","itemVesselDiameter","recipeName","recipeQty"].some(id=>$(id).value.trim());
  if(hasData&&!confirm("Να ξεκινήσει νέα καταχώριση; Τα στοιχεία της τρέχουσας φόρμας θα καθαριστούν. Το ιστορικό και η βιβλιοθήκη τροφίμων δεν θα διαγραφούν."))return;
  resetMealForm();
 };
