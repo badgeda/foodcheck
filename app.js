@@ -173,20 +173,33 @@ function barHTML(label,value,reason){
  return `<div class="impact"><div class="impact-head"><b>${label}</b><span>${value}/100 · ${value<=33?'Χαμηλή':value<=66?'Μέτρια':'Υψηλή'} επιβάρυνση</span></div><div class="impact-track"><span class="impact-marker" style="left:${value}%;--marker-color:${color}"></span></div><p class="muted">${reason}</p></div>`;
 }
 function resultHTML(p,portion,r){
- const scoreText=r.score==null?'Δεν υπολογίστηκε':r.score+'/100';
- const qualityLabel=r.score==null?'Ανεπαρκή στοιχεία':r.score>=85?'Πολύ καλή ποιότητα':r.score>=70?'Καλή ποιότητα':r.score>=50?'Μέτρια ποιότητα':'Χαμηλή ποιότητα';
- return `<div class="result ${r.level}"><div class="scoreline"><div class="score">${scoreText}</div><div><b>${qualityLabel}</b><br><span class="pill">Ποιότητα δεδομένων: ${r.confidence}</span></div></div>
- <div class="meter"><span style="width:${r.score??0}%"></span></div><b>${esc(p.name||'Τρόφιμο')}</b>
- <h3>Ποιότητα προϊόντος</h3><p>Η βαθμολογία ξεκινά από 100 και αφαιρεί μονάδες για συγκεκριμένα αρνητικά χαρακτηριστικά. Δεν προστίθενται μονάδες για πρωτεΐνη ή ίνες.</p>
- ${r.qualityReasons?.length?'<ul>'+r.qualityReasons.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'<p class="muted">Δεν εντοπίστηκε καταχωρισμένος παράγοντας αφαίρεσης.</p>'}
+ const scoreText=r.score==null?"Δεν υπολογίστηκε":r.score+"/100";
+ const qualityLabel=r.score==null?"Ανεπαρκή στοιχεία":r.score>=85?"Πολύ καλή ποιότητα":r.score>=70?"Καλή ποιότητα":r.score>=50?"Μέτρια ποιότητα":"Χαμηλή ποιότητα";
+
+ const valueHTML=(field,value,unit="g")=>{
+  const warning=r.warnings?.[field];
+  return `${value??"—"}${unit?" "+unit:""}${warning?` <strong style="color:#c62828" title="${esc(warning)}">ΠΡΟΣΟΧΗ – ΑΣΥΝΗΘΙΣΤΗ ΤΙΜΗ</strong>`:""}`;
+ };
+
+ return `<div class="result ${r.level}">
+ <div class="scoreline"><div class="score">${scoreText}</div><div><b>${qualityLabel}</b><br><span class="pill">Ποιότητα δεδομένων: ${r.confidence}</span></div></div>
+ <div class="meter"><span style="width:${r.score??0}%"></span></div><b>${esc(p.name||"Τρόφιμο")}</b>
+ <h3>Ποιότητα προϊόντος</h3>
+ <p>Η βαθμολογία ξεκινά από 100 και αφαιρεί μονάδες για συγκεκριμένα αρνητικά χαρακτηριστικά. Δεν προστίθενται μονάδες για πρωτεΐνη ή ίνες.</p>
+ ${r.qualityReasons?.length?"<ul>"+r.qualityReasons.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>":"<p class='muted'>Δεν εντοπίστηκε καταχωρισμένος παράγοντας αφαίρεσης.</p>"}
  <h3>Επιβάρυνση στη μερίδα των ${portion} g</h3>
- ${barHTML('Διαβήτης',r.diabetesScore,`Συνολικοί υδατάνθρακες: ${r.portionCarbs==null?'—':r.portionCarbs.toFixed(1)+' g'} στη μερίδα.`)}
- ${barHTML('Τριγλυκερίδια',r.triglyceridesScore,'Συνεκτιμώνται οι υδατάνθρακες, τα σάκχαρα και η ένδειξη επεξεργασίας όπου είναι γνωστή.')}
- ${barHTML('Χοληστερίνη',r.cholesterolScore,`Κορεσμένα λιπαρά: ${p.sat==null?'—':(p.sat*portion/100).toFixed(1)+' g'} στη μερίδα.`)}
- <h3>Διατροφικά στοιχεία ανά 100 g</h3><p>Υδατάνθρακες: ${p.carbs??'—'} g · Σάκχαρα: ${p.sugars??'—'} g · Πρωτεΐνες: ${p.protein??'—'} g.</p><p>Συνολικά λιπαρά: ${p.fat??'—'} g · Κορεσμένα: ${p.sat??'—'} g · Ίνες: ${p.fiber??'—'} g · Αλάτι: ${p.salt??'—'} g.</p>
- <h3>Συστατικά και επεξεργασία</h3><p>${esc(p.ingredients||'Δεν καταχωρίστηκε λίστα συστατικών.')}</p><p>Κατηγορία NOVA: ${p.novaGroup||'Άγνωστη'} · Πρόσθετα: ${esc(p.additives||'Δεν υπάρχουν διαθέσιμα στοιχεία.')}</p>
- ${r.notes.length?'<b>Παρατηρήσεις</b><ul>'+r.notes.map(n=>'<li>'+esc(n)+'</li>').join('')+'</ul>':''}
- <p class="muted">Οι μπάρες είναι ενδεικτικές διατροφικές ενδείξεις και όχι ιατρική οδηγία. Τα πρόσθετα Ε δεν τιμωρούνται αυτομάτως: απαιτείται αξιολόγηση της συγκεκριμένης ουσίας και της χρήσης της.</p></div>`;
+ ${barHTML("Διαβήτης",r.diabetesScore,`Συνολικοί υδατάνθρακες: ${r.portionCarbs==null?"—":r.portionCarbs.toFixed(1)+" g"} στη μερίδα.`)}
+ ${barHTML("Τριγλυκερίδια",r.triglyceridesScore,"Συνεκτιμώνται οι υδατάνθρακες, τα σάκχαρα και η ένδειξη επεξεργασίας όπου είναι γνωστή.")}
+ ${barHTML("Χοληστερίνη",r.cholesterolScore,`Κορεσμένα λιπαρά: ${r.portionSat==null?"—":r.portionSat.toFixed(1)+" g"} · Trans λιπαρά: ${r.portionTrans==null?"—":r.portionTrans.toFixed(2)+" g"} στη μερίδα.`)}
+ <h3>Διατροφικά στοιχεία ανά 100 g</h3>
+ <p>Υδατάνθρακες: ${valueHTML("carbs",p.carbs)} · Σάκχαρα: ${valueHTML("sugars",p.sugars)} · Πρωτεΐνες: ${valueHTML("protein",p.protein)}.</p>
+ <p>Συνολικά λιπαρά: ${valueHTML("fat",p.fat)} · Κορεσμένα: ${valueHTML("sat",p.sat)} · Trans: ${valueHTML("trans",p.trans)} · Ίνες: ${valueHTML("fiber",p.fiber)} · Αλάτι: ${valueHTML("salt",p.salt)}.</p>
+ <h3>Συστατικά και επεξεργασία</h3>
+ <p>${esc(p.ingredients||"Δεν καταχωρίστηκε λίστα συστατικών.")}</p>
+ <p>Κατηγορία NOVA: ${valueHTML("novaGroup",p.novaGroup,"")} · Πρόσθετα: ${esc(p.additives||"Δεν υπάρχουν διαθέσιμα στοιχεία.")}</p>
+ ${r.notes.length?"<b>Παρατηρήσεις</b><ul>"+r.notes.map(n=>"<li>"+esc(n)+"</li>").join("")+"</ul>":""}
+ <p class="muted">Οι μπάρες είναι ενδεικτικές διατροφικές ενδείξεις και όχι ιατρική οδηγία. Τα πρόσθετα Ε δεν τιμωρούνται αυτομάτως: απαιτείται αξιολόγηση της συγκεκριμένης ουσίας και της χρήσης της.</p>
+ </div>`;
 }
 
 function assessMeal(p,portion=100){
