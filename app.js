@@ -363,8 +363,9 @@ function addRecipeIngredient(){
 }
 function drawRecipeItems(){
  const box=$("recipeItems");if(!box)return;
- box.innerHTML=recipeItems.length?'<h3>Υλικά που καταχωρίστηκαν</h3>'+recipeItems.map((x,i)=>{const w=recipeWeight(x);return `<div class="item"><b>${esc(x.name)}</b><br><span class="muted">${x.quantity} ${recipeUnitLabel(x.unit)} · ${w==null?"Δεν υπάρχει ασφαλής μετατροπή σε γραμμάρια":("περίπου "+w.toFixed(1)+" g")}</span><br><span class="muted">Υδατάνθρακες ${x.carbs??"—"} · Σάκχαρα ${x.sugars??"—"} · Κορεσμένα ${x.sat??"—"} · Ίνες ${x.fiber??"—"} · Αλάτι ${x.salt??"—"} g/100g</span> <button class="danger small" data-recipedel="${i}">Αφαίρεση</button></div>`}).join(""):"<p class='muted'>Δεν έχουν προστεθεί υλικά συνταγής.</p>";
+ box.innerHTML=recipeItems.length?'<h3>Υλικά που καταχωρίστηκαν</h3>'+recipeItems.map((x,i)=>{const w=recipeWeight(x);return `<div class="item"><b>${esc(x.name)}</b><br><span class="muted">${x.quantity} ${recipeUnitLabel(x.unit)} · ${w==null?"Δεν υπάρχει ασφαλής μετατροπή σε γραμμάρια":("περίπου "+w.toFixed(1)+" g")}</span><br><span class="muted">Υδατάνθρακες ${x.carbs??"—"} · Σάκχαρα ${x.sugars??"—"} · Κορεσμένα ${x.sat??"—"} · Ίνες ${x.fiber??"—"} · Αλάτι ${x.salt??"—"} g/100g</span> <button class="secondary small" data-recipeedit="${i}">Διόρθωση</button> <button class="danger small" data-recipedel="${i}">Αφαίρεση</button></div>`}).join(""):"<p class='muted'>Δεν έχουν προστεθεί υλικά συνταγής.</p>";
  box.querySelectorAll("[data-recipedel]").forEach(b=>b.onclick=()=>{recipeItems.splice(+b.dataset.recipedel,1);drawRecipeItems()});
+ box.querySelectorAll("[data-recipeedit]").forEach(b=>b.onclick=()=>{const i=+b.dataset.recipeedit,x=recipeItems[i];$("recipeName").value=x.name;$("recipeQty").value=x.quantity;$("recipeUnit").value=x.unit;for(const field of ["energyKj","carbs","sugars","fat","sat","fiber","salt","protein","trans"])$("recipe"+field[0].toUpperCase()+field.slice(1)).value=x[field]??"";recipeItems.splice(i,1);drawRecipeItems();$("recipeName").focus()});
 }
 $("addRecipeIngredient").onclick=addRecipeIngredient;
 
@@ -405,7 +406,7 @@ function resetMealForm(){
  $("mealName").focus();
 }
 $("newMeal").onclick=()=>{
- const hasData=mealItems.length||recipeItems.length||["mealName","preGlucose","preTime","method","rapidDose","rapidTime","foodItemName","itemWeight","itemConsumedWeight","itemVessel","itemVesselDiameter","recipeName","recipeQty"].some(id=>$(id).value.trim());
+ const hasData=mealItems.length||recipeItems.length||["mealName","preGlucose","preTime","method","rapidDose","rapidTime","foodItemName","itemWeight","itemConsumedWeight","itemVessel","itemVesselDiameter","recipeName","recipeQty","actualMealWeight"].some(id=>$(id).value.trim());
  if(hasData&&!confirm("Να ξεκινήσει νέα καταχώριση; Τα στοιχεία της τρέχουσας φόρμας θα καθαριστούν. Το ιστορικό και η βιβλιοθήκη τροφίμων δεν θα διαγραφούν."))return;
  resetMealForm();
 };
