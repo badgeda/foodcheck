@@ -31,7 +31,7 @@ button{border:0;border-radius:10px;padding:11px 14px;font:inherit;font-weight:70
 
 footer{max-width:850px;margin:auto;padding:0 16px 25px;color:#65736c;font-size:.8rem}
 @media(max-width:560px){.grid{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr 1fr}.panel{padding:13px}}
-</style>
+ .mode-switch{display:flex;gap:8px;margin:10px 0 16px}.mode-switch button{flex:1;min-height:48px}.common-meal{padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:12px}\n</style>
 </head>
 <body>
 <header><img class="brand-logo" src="./icon-192.png" alt="Λογότυπο ΔΑ"><div><h1>FoodCheck</h1><p>Έλεγχος προϊόντων, γευμάτων και προσωπικού ημερολογίου</p></div></header>
@@ -81,40 +81,24 @@ footer{max-width:850px;margin:auto;padding:0 16px 25px;color:#65736c;font-size:.
 <section id="tab-meal" class="hidden">
 <div class="panel">
 <h2>Καταγραφή γεύματος</h2>
-<label for="mealName">Όνομα γεύματος</label><input id="mealName" placeholder="π.χ. κοτόπουλο με πατάτες και σαλάτα">
-<h3>1. Σάκχαρο πριν από το γεύμα</h3>
-<div class="grid">
-<div><label for="preGlucose">Γλυκόζη (mg/dL)</label><input id="preGlucose" type="number" min="0" placeholder="π.χ. 125"></div>
-<div><label for="preTime">Ώρα μέτρησης</label><input id="preTime" type="time"></div>
+<div class="mode-switch" role="group" aria-label="Τρόπος καταχώρισης">
+<button type="button" class="primary" id="mealModeRecipe" aria-pressed="true">Προσωπική προετοιμασία</button>
+<button type="button" class="secondary" id="mealModeUnknown" aria-pressed="false">Άγνωστη παρασκευή</button>
 </div>
-<label for="trend">Τάση CGM (προαιρετικά)</label><select id="trend"><option value="">Δεν καταγράφηκε</option><option>Σταθερή</option><option>Ανοδική</option><option>Καθοδική</option><option>Ταχέως ανοδική</option><option>Ταχέως καθοδική</option></select>
-<h3>2. Τρόφιμα και συνοδευτικά</h3>
-<p class="muted">Επίλεξε κατηγορία και μετά διάλεξε από τη λίστα ένα αποθηκευμένο τρόφιμο ή γράψε νέο. Κάθε τρόφιμο αποθηκεύεται στη δική του κατηγορία και ανακαλεί τα διαθέσιμα διατροφικά στοιχεία του.</p>
-<div class="grid">
-<div><label for="foodItemType">Κατηγορία</label><select id="foodItemType"><option>Κυρίως πιάτο</option><option>Συνοδευτικό</option><option>Σαλάτα</option><option>Ψωμί</option><option>Τυρί</option><option>Πρόσθετα / σάλτσες</option><option>Γλυκό</option><option>Ποτό</option></select></div>
-<div><label for="foodItemName">Ονομασία τροφίμου</label><div class="food-picker"><input id="foodItemName" autocomplete="off" aria-autocomplete="list" aria-controls="foodSuggestions" placeholder="Επίλεξε αποθηκευμένο ή γράψε νέο τρόφιμο"><div id="foodSuggestions" class="food-suggestions hidden" role="listbox"></div></div><p class="muted">Πάτησε στο πεδίο για να δεις τα αποθηκευμένα τρόφιμα της κατηγορίας.</p></div>
-<div><label for="itemWeight">Βάρος / προγραμματισμένη ποσότητα (g)</label><input id="itemWeight" type="number" min="0" step="1" placeholder="π.χ. 150"></div>
-<div><label for="itemConsumedWeight">Ποσότητα που καταναλώθηκε (g)</label><input id="itemConsumedWeight" type="number" min="0" step="1" placeholder="συμπλήρωσε μετά το γεύμα"></div>
-<div><label for="itemVessel">Σκεύος σερβιρίσματος</label><select id="itemVessel"><option value="">Δεν καταγράφηκε</option><option>Ρηχό πιάτο</option><option>Βαθύ πιάτο</option><option>Μπολ</option><option>Ποτήρι</option><option>Φλιτζάνι</option><option>Πιατέλα</option><option>Άλλο</option></select></div>
-<div><label for="itemVesselDiameter">Διάμετρος σκεύους (cm)</label><input id="itemVesselDiameter" type="number" min="0" step="0.5" placeholder="π.χ. 22 · προαιρετικά"></div>
-<details class="wide"><summary>Διατροφικά στοιχεία ανά 100 g (προαιρετικά)</summary><div class="grid">
-<div><label for="itemCarbs">Υδατάνθρακες (g/100g)</label><input id="itemCarbs" type="number" min="0" step=".1"></div>
-<div><label for="itemSugars">Σάκχαρα (g/100g)</label><input id="itemSugars" type="number" min="0" step=".1"></div>
-<div><label for="itemSat">Κορεσμένα (g/100g)</label><input id="itemSat" type="number" min="0" step=".1"></div>
-<div><label for="itemFiber">Ίνες (g/100g)</label><input id="itemFiber" type="number" min="0" step=".1"></div>
-<div><label for="itemSalt">Αλάτι (g/100g)</label><input id="itemSalt" type="number" min="0" step=".01"></div>
-</div></details>
+<div class="common-meal">
+<label for="mealName">Ονομασία γεύματος</label><input id="mealName" placeholder="π.χ. σπανακόρυζο με φέτα">
+<h3>Σάκχαρο πριν από το γεύμα</h3>
+<div class="grid"><div><label for="preGlucose">Γλυκόζη (mg/dL)</label><input id="preGlucose" type="number" min="0" placeholder="π.χ. 125"></div><div><label for="preTime">Ώρα μέτρησης</label><input id="preTime" type="time"></div></div>
+<label for="trend">Τάση CGM</label><select id="trend"><option value="">Δεν καταγράφηκε</option><option>Σταθερή</option><option>Ανοδική</option><option>Καθοδική</option><option>Ταχέως ανοδική</option><option>Ταχέως καθοδική</option></select>
 </div>
-<div class="actions"><button class="secondary" id="addFood">Προσθήκη στο γεύμα</button></div>
-<div id="mealItems"></div>
-
-<h3>3. Υλικά συνταγής</h3>
-<p class="muted">Καταχώρισε κάθε υλικό της κατσαρόλας ή του ταψιού ξεχωριστά. Οι κουταλιές μετατρέπονται σε ενδεικτικά γραμμάρια μόνο για ελαιόλαδο, αλάτι και πιπέρι.</p>
+<div id="recipeModePanel">
+<h3>Υλικά συνταγής και συνοδευτικά</h3>
+<p class="muted">Καταχώρισε τις πραγματικές ποσότητες των υλικών. Το FoodCheck μετατρέπει τις γνωστές μονάδες σε γραμμάρια και υπολογίζει το εκτιμώμενο βάρος της συνταγής. Για κάθε υλικό συμπλήρωσε διατροφικά στοιχεία ανά 100 g όταν είναι διαθέσιμα.</p>
 <div class="grid">
 <div><label for="recipeName">Υλικό</label><input id="recipeName" placeholder="π.χ. ελαιόλαδο, πατάτες, κρεμμύδι"></div>
-<div><label for="recipeQty">Ποσότητα</label><input id="recipeQty" type="number" min="0" step="0.1" placeholder="π.χ. 2"></div>
+<div><label for="recipeQty">Ποσότητα</label><input id="recipeQty" type="number" min="0" step="0.1"></div>
 <div><label for="recipeUnit">Μονάδα</label><select id="recipeUnit"><option value="g">Γραμμάρια (g)</option><option value="kg">Κιλά (kg)</option><option value="tbsp">Κουταλιά σούπας</option><option value="tsp">Κουταλάκι γλυκού</option><option value="piece">Τεμάχια</option><option value="ml">Χιλιοστόλιτρα (ml)</option><option value="l">Λίτρα (L)</option></select></div>
-<div><label for="recipeEnergy">Ενέργεια (kJ/100g)</label><input id="recipeEnergy" type="number" min="0" step="1"></div>
+<div><label for="recipeEnergy">Ενέργεια (kJ/100g)</label><input id="recipeEnergy" type="number" min="0"></div>
 <div><label for="recipeCarbs">Υδατάνθρακες (g/100g)</label><input id="recipeCarbs" type="number" min="0" step=".1"></div>
 <div><label for="recipeSugars">Σάκχαρα (g/100g)</label><input id="recipeSugars" type="number" min="0" step=".1"></div>
 <div><label for="recipeFat">Λιπαρά (g/100g)</label><input id="recipeFat" type="number" min="0" step=".1"></div>
@@ -124,19 +108,24 @@ footer{max-width:850px;margin:auto;padding:0 16px 25px;color:#65736c;font-size:.
 <div><label for="recipeProtein">Πρωτεΐνη (g/100g)</label><input id="recipeProtein" type="number" min="0" step=".1"></div>
 <div><label for="recipeTrans">Trans (g/100g)</label><input id="recipeTrans" type="number" min="0" step=".01"></div>
 </div>
-<div class="actions"><button type="button" class="secondary" id="addRecipeIngredient">Προσθήκη υλικού στη συνταγή</button></div>
+<div class="actions"><button type="button" class="secondary" id="addRecipeIngredient">Προσθήκη υλικού</button></div>
 <div id="recipeItems"></div>
-<div class="grid">
-<div><label for="recipeTotalPortions">Μερίδες που προκύπτουν από τη συνταγή</label><input id="recipeTotalPortions" type="number" min="1" step="1" value="1"></div>
-<div><label for="recipeConsumedPortions">Μερίδες που κατανάλωσα</label><input id="recipeConsumedPortions" type="number" min="0" step="0.25" value="1"></div>
+<div class="grid"><div><label for="recipeTotalPortions">Μερίδες που παρασκευάστηκαν</label><input id="recipeTotalPortions" type="number" min="1" step="1" value="1"></div><div><label for="recipeConsumedPortions">Μερίδες που καταναλώθηκαν</label><input id="recipeConsumedPortions" type="number" min="0" step=".25" value="1"></div></div>
+<div id="recipeWeightSummary" class="result" aria-live="polite"></div>
+<label for="actualMealWeight">Προαιρετικά: πραγματικό βάρος της μερίδας (g)</label><input id="actualMealWeight" type="number" min="0" step="1" placeholder="Μόνο αν τη ζύγισες">
+<label for="method">Τρόπος παρασκευής / σημειώσεις</label><textarea id="method" rows="2" placeholder="π.χ. βράσιμο, ψήσιμο"></textarea>
 </div>
-<div id="recipeWeightSummary" class="result" aria-live="polite"></div><p class="muted">Το FoodCheck υπολογίζει αυτόματα το εκτιμώμενο βάρος από τα υλικά και τις μερίδες. Δεν χρειάζεται να γνωρίζεις ή να συμπληρώνεις το βάρος της μερίδας.</p><label for="actualMealWeight">Προαιρετικά: πραγματικό βάρος μερίδας, μόνο αν τη ζύγισες (g)</label><input id="actualMealWeight" type="number" min="0" step="1" placeholder="Άφησέ το κενό αν δεν τη ζύγισες">
-<label for="method">Σημειώσεις παρασκευής</label><textarea id="method" rows="2" placeholder="π.χ. βράσιμο, ψήσιμο, αφαίρεση πέτσας"></textarea>
-<h3>4. Ταχεία ινσουλίνη που πραγματικά χορηγήθηκε</h3>
-<div class="grid">
-<div><label for="rapidDose">Πραγματική δόση (μονάδες)</label><input id="rapidDose" type="number" min="0" step=".5"></div>
-<div><label for="rapidTime">Ώρα χορήγησης</label><input id="rapidTime" type="time"></div>
+<div id="unknownModePanel" class="hidden">
+<h3>Γεύμα άγνωστης παρασκευής</h3>
+<p class="muted">Ζύγισε τη μερίδα και γράψε μόνο τις ονομασίες των κύριων υλικών. Το FoodCheck θα χρησιμοποιεί διαθέσιμο τυπικό διατροφικό προφίλ για αναγνωρίσιμα φαγητά. Η εκτίμηση δεν είναι ακριβής μέτρηση.</p>
+<div class="grid"><div><label for="unknownMealWeight">Πραγματικό βάρος μερίδας (g)</label><input id="unknownMealWeight" type="number" min="1" step="1" placeholder="π.χ. 350"></div><div><label for="unknownVessel">Σκεύος σερβιρίσματος</label><select id="unknownVessel"><option value="">Δεν καταγράφηκε</option><option>Ρηχό πιάτο</option><option>Βαθύ πιάτο</option><option>Μπολ</option><option>Πιατέλα</option><option>Άλλο</option></select></div></div>
+<label for="unknownIngredientName">Κύριο υλικό</label><div class="grid"><div><input id="unknownIngredientName" placeholder="π.χ. πατάτα"></div><div><button type="button" class="secondary" id="addUnknownIngredient">Προσθήκη ονομασίας</button></div></div>
+<div id="unknownIngredients" class="item muted">Δεν έχουν καταχωριστεί υλικά.</div>
+<div id="unknownEstimate" class="result" aria-live="polite"></div>
+<label for="unknownNotes">Παρατηρήσεις (προαιρετικά)</label><textarea id="unknownNotes" rows="2" placeholder="π.χ. με αρκετό λάδι, χωρίς τυρί"></textarea>
 </div>
+<h3>Ταχεία ινσουλίνη που πραγματικά χορηγήθηκε</h3>
+<div class="grid"><div><label for="rapidDose">Πραγματική δόση (μονάδες)</label><input id="rapidDose" type="number" min="0" step=".5"></div><div><label for="rapidTime">Ώρα χορήγησης</label><input id="rapidTime" type="time"></div></div>
 <p class="muted">Καταγράφεται μόνο η δόση που δηλώνεις ότι χορηγήθηκε. Το FoodCheck δεν υπολογίζει ούτε προτείνει δόση ινσουλίνης.</p>
 <div class="actions"><button class="primary" id="analyzeMeal">Αξιολόγηση και αποθήκευση γεύματος</button><button class="secondary" id="saveMealTemplate">Αποθήκευση στη βιβλιοθήκη</button><button class="secondary" id="newMeal">Νέα καταχώριση γεύματος</button></div>
 <div id="mealResult"></div>
@@ -172,5 +161,5 @@ footer{max-width:850px;margin:auto;padding:0 16px 25px;color:#65736c;font-size:.
 <footer><strong>Έκδοση ελέγχου Android 16/11/2026-4</strong><br>Το FoodCheck είναι ενημερωτικό εργαλείο και όχι ιατρική συσκευή ή ιατρική οδηγία. Δεν διαγιγνώσκει, δεν προτείνει δόσεις ινσουλίνης και δεν αντικαθιστά τον γιατρό. Οι φωτογραφίες δεν προσδιορίζουν με ακρίβεια βάρος, λάδι ή κρυφά υλικά· οι εκτιμήσεις χρειάζονται επιβεβαίωση. Τα δεδομένα αποθηκεύονται τοπικά στη συσκευή και δεν συγχρονίζονται αυτόματα.</footer>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
-<script src="./app.js?v=20261116-15"></script>
+<script src="./app.js?v=20261116-16"></script>
 </body></html>
