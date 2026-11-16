@@ -48,8 +48,8 @@ function checkProductValues(p){
  if(valid(p.sat)&&valid(p.fat)&&Number(p.sat)>Number(p.fat)+0.1)
   mark("sat","Τα κορεσμένα λιπαρά υπερβαίνουν τα συνολικά λιπαρά.");
 
- if(valid(p.trans)&&valid(p.fat)&&Number(p.trans)>Number(p.fat)+0.1)
-  mark("trans","Τα trans λιπαρά υπερβαίνουν τα συνολικά λιπαρά.");
+ if(valid(p.trans)&&valid(p.fat)&&Number(p.trans)>Number(p.fat))
+  mark("trans","Τα trans λιπαρά υπερβαίνουν τα συνολικά λιπαρά. Χρειάζεται επιβεβαίωση.");
 
  if(p.novaGroup!=null&&p.novaGroup!==""){
   const n=Number(p.novaGroup);
