@@ -2,7 +2,7 @@ const $=id=>document.getElementById(id);
 const KEYS={hist:"fc_history",favs:"fc_favs",meals:"fc_meals_v2",journal:"fc_journal_v2",foods:"fc_food_catalog_v1"};
 const read=(k,d=[])=>{try{return JSON.parse(localStorage.getItem(k)||JSON.stringify(d))}catch{return d}};
 let history=read(KEYS.hist),favorites=read(KEYS.favs),mealLibrary=read(KEYS.meals),journal=read(KEYS.journal),foodCatalog=read(KEYS.foods,{});
-let mealItems=[],photos=[],lastProduct=null,lastMealResult=null,scanner=null;
+let mealItems=[],recipeItems=[],photos=[],lastProduct=null,lastMealResult=null,scanner=null;
 const PHOTO_DB="foodcheck_photos",PHOTO_STORE="images";
 
 // Μητρώο προϊόντων με ανεξάρτητα τεκμηριωμένο NOVA 4.
@@ -326,13 +326,47 @@ document.addEventListener("click",e=>{if(!e.target.closest(".food-picker")){food
 function clearFoodNutrition(){["itemCarbs","itemSugars","itemSat","itemFiber","itemSalt"].forEach(id=>$(id).value="")}
 function recallFood(){const name=$("foodItemName").value.trim(),type=$("foodItemType").value,key=foodKey(name);if(!key)return;const found=categoryFoods(type).find(x=>foodKey(x.name)===key);if(found){for(const [field,id] of Object.entries({carbs:"itemCarbs",sugars:"itemSugars",sat:"itemSat",fiber:"itemFiber",salt:"itemSalt"}))if(found[field]!=null)$(id).value=found[field]}}
 function rememberFood(item){const type=item.type,key=foodKey(item.name);if(!key)return;const list=categoryFoods(type),index=list.findIndex(x=>foodKey(x.name)===key);const saved={...(index>=0?list[index]:{}),name:index>=0?list[index].name:item.name};for(const field of ["carbs","sugars","sat","fiber","salt"])if(item[field]!=null)saved[field]=item[field];if(index>=0)list[index]=saved;else list.unshift(saved);foodCatalog[type]=list.slice(0,250);localStorage.setItem(KEYS.foods,JSON.stringify(foodCatalog));drawFoodSuggestions()}
+
+function recipeWeight(item){
+ const q=Number(item.quantity)||0,u=item.unit;
+ if(u==="g")return q;
+ if(u==="kg")return q*1000;
+ if(u==="ml")return q;
+ if(u==="l")return q*1000;
+ const n=foodKey(item.name);
+ if(/ελαιολαδ|λαδι/.test(n))return q*(u==="tbsp"?13.5:u==="tsp"?4.5:null);
+ if(/αλατι/.test(n))return q*(u==="tbsp"?18:u==="tsp"?6:null);
+ if(/πιπερ/.test(n))return q*(u==="tbsp"?6:u==="tsp"?2:null);
+ return null;
+}
+function recipeUnitLabel(u){return ({g:"g",kg:"kg",tbsp:"κουτ. σούπας",tsp:"κουτ. γλυκού",piece:"τεμ.",ml:"ml",l:"L"})[u]||u}
+function addRecipeIngredient(){
+ const name=$("recipeName").value.trim(),quantity=num("recipeQty");
+ if(!name||quantity==null||quantity<=0){alert("Συμπλήρωσε ονομασία και θετική ποσότητα υλικού.");return}
+ const item={name,quantity,unit:$("recipeUnit").value,weight:0,energyKj:num("recipeEnergy"),carbs:num("recipeCarbs"),sugars:num("recipeSugars"),fat:num("recipeFat"),sat:num("recipeSat"),fiber:num("recipeFiber"),salt:num("recipeSalt"),protein:num("recipeProtein"),trans:num("recipeTrans")};
+ item.weight=recipeWeight(item);
+ recipeItems.push(item);
+ ["recipeName","recipeQty","recipeEnergy","recipeCarbs","recipeSugars","recipeFat","recipeSat","recipeFiber","recipeSalt","recipeProtein","recipeTrans"].forEach(id=>$(id).value="");
+ drawRecipeItems();
+}
+function drawRecipeItems(){
+ const box=$("recipeItems");if(!box)return;
+ box.innerHTML=recipeItems.length?'<h3>Υλικά που καταχωρίστηκαν</h3>'+recipeItems.map((x,i)=>{const w=recipeWeight(x);return `<div class="item"><b>${esc(x.name)}</b><br><span class="muted">${x.quantity} ${recipeUnitLabel(x.unit)} · ${w==null?"Δεν υπάρχει ασφαλής μετατροπή σε γραμμάρια":("περίπου "+w.toFixed(1)+" g")}</span><br><span class="muted">Υδατάνθρακες ${x.carbs??"—"} · Σάκχαρα ${x.sugars??"—"} · Κορεσμένα ${x.sat??"—"} · Ίνες ${x.fiber??"—"} · Αλάτι ${x.salt??"—"} g/100g</span> <button class="danger small" data-recipedel="${i}">Αφαίρεση</button></div>`}).join(""):"<p class='muted'>Δεν έχουν προστεθεί υλικά συνταγής.</p>";
+ box.querySelectorAll("[data-recipedel]").forEach(b=>b.onclick=()=>{recipeItems.splice(+b.dataset.recipedel,1);drawRecipeItems()});
+}
+$("addRecipeIngredient").onclick=addRecipeIngredient;
+
 function addItem(){let name=$("foodItemName").value.trim();if(!name){alert("Γράψε το τρόφιμο.");return}if(num("itemWeight")==null){alert("Συμπλήρωσε το βάρος του τροφίμου σε γραμμάρια.");return}let it={name,type:$("foodItemType").value,carbs:num("itemCarbs"),plannedWeight:num("itemWeight"),consumedWeight:num("itemConsumedWeight"),weight:num("itemWeight"),vessel:$("itemVessel").value,vesselDiameter:num("itemVesselDiameter"),sugars:num("itemSugars"),sat:num("itemSat"),fiber:num("itemFiber"),salt:num("itemSalt")};mealItems.push(it);rememberFood(it);$("foodItemName").value="";foodSuggestionsOpen=false;drawFoodSuggestions(false);["itemCarbs","itemWeight","itemConsumedWeight","itemVesselDiameter","itemSugars","itemSat","itemFiber","itemSalt"].forEach(id=>$(id).value="");$("itemVessel").value="";drawMealItems()}
 $("foodItemType").onchange=()=>{$("foodItemName").value="";clearFoodNutrition();foodSuggestionsOpen=true;drawFoodSuggestions(true)};
 $("foodItemName").addEventListener("change",recallFood);
 $("foodItemName").addEventListener("input",()=>{const key=foodKey($("foodItemName").value);const found=categoryFoods($("foodItemType").value).find(x=>foodKey(x.name)===key);if(found)recallFood();else clearFoodNutrition();foodSuggestionsOpen=true;drawFoodSuggestions(true)});
 $("addFood").onclick=addItem;
 function drawMealItems(){$("mealItems").innerHTML=mealItems.length?`<h3>Στοιχεία γεύματος</h3>`+mealItems.map((x,i)=>`<div class="item"><b>${esc(x.name)}</b> <span class="pill">${esc(x.type)}</span><br><span class="muted">Προγραμματισμένα: ${x.plannedWeight??x.weight??"—"} g · Καταναλώθηκαν: ${x.consumedWeight??"Δεν καταγράφηκε"} g · Σκεύος: ${esc(x.vessel||"Δεν καταγράφηκε")}${x.vesselDiameter!=null?` · Διάμετρος: ${x.vesselDiameter} cm`:""} · Υδατάνθρακες: ${x.carbs??"—"} g/100g</span> <button class="danger small" data-del="${i}">Αφαίρεση</button></div>`).join(""):`<p class='muted'>Δεν έχουν προστεθεί τρόφιμα.</p>`;$("mealItems").querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{mealItems.splice(+b.dataset.del,1);drawMealItems()})}
-function mealPayload(){let items=mealItems.map(x=>({...x,plannedWeight:x.plannedWeight??x.weight??null,consumedWeight:x.consumedWeight??null}));let plannedCarbs=0,consumedCarbs=0,plannedCount=0,consumedCount=0,plannedSugars=0,sugarCount=0;for(const x of items){if(x.carbs!=null&&x.plannedWeight!=null){plannedCarbs+=x.carbs*x.plannedWeight/100;plannedCount++}if(x.sugars!=null&&x.plannedWeight!=null){plannedSugars+=x.sugars*x.plannedWeight/100;sugarCount++}if(x.carbs!=null&&x.consumedWeight!=null){consumedCarbs+=x.carbs*x.consumedWeight/100;consumedCount++}}let totalWeight=items.reduce((a,x)=>a+(x.plannedWeight||0),0);let avg=field=>{let weight=0,total=0;for(const x of items){const w=x.plannedWeight??x.weight??0;if(x[field]!=null&&w>0){total+=Number(x[field])*w/100;weight+=w}}return weight?total/weight*100:null};let r=assess({carbs:totalWeight?plannedCarbs/totalWeight*100:null,sugars:avg("sugars"),sat:avg("sat"),fiber:avg("fiber"),salt:avg("salt")},100);return {id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),name:$("mealName").value.trim()||"Γεύμα",date:new Date().toLocaleString("el-GR"),preGlucose:num("preGlucose"),preTime:$("preTime").value,trend:$("trend").value,items,estimatedWeight:totalWeight||null,method:$("method").value,photos:[],rapidDose:num("rapidDose"),rapidTime:$("rapidTime").value,plannedCarbs:plannedCount===items.length?plannedCarbs:null,consumedCarbs:consumedCount===items.length?consumedCarbs:null,totalCarbs:plannedCount===items.length?plannedCarbs:null,carbDataCount:plannedCount,consumedCarbDataCount:consumedCount,score:plannedCount===items.length&&items.length>0?r.score:null,impact:{diabetes:r.diabetesScore,triglycerides:r.triglyceridesScore,cholesterol:r.cholesterolScore,sugars:sugarCount? (plannedSugars<=5?5:plannedSugars<=10?25:plannedSugars<=15?45:plannedSugars<=20?65:plannedSugars<=30?85:100):null},post:[]}}
+function mealPayload(){
+ const totalPortions=Math.max(1,num("recipeTotalPortions")||1),consumedPortions=num("recipeConsumedPortions")??totalPortions,fraction=Math.min(1,consumedPortions/totalPortions);
+ let items=mealItems.map(x=>({...x,plannedWeight:x.plannedWeight??x.weight??null,consumedWeight:x.consumedWeight??null}));
+ const recipeRecords=recipeItems.map(x=>({...x,type:"Υλικό συνταγής",plannedWeight:recipeWeight(x),consumedWeight:recipeWeight(x)==null?null:recipeWeight(x)*fraction,unit:x.unit,quantity:x.quantity,recipe:true}));
+ items=items.concat(recipeRecords);let plannedCarbs=0,consumedCarbs=0,plannedCount=0,consumedCount=0,plannedSugars=0,sugarCount=0;for(const x of items){if(x.carbs!=null&&x.plannedWeight!=null){plannedCarbs+=x.carbs*x.plannedWeight/100;plannedCount++}if(x.sugars!=null&&x.plannedWeight!=null){plannedSugars+=x.sugars*x.plannedWeight/100;sugarCount++}if(x.carbs!=null&&x.consumedWeight!=null){consumedCarbs+=x.carbs*x.consumedWeight/100;consumedCount++}}let totalWeight=items.reduce((a,x)=>a+(x.plannedWeight||0),0);let avg=field=>{let weight=0,total=0;for(const x of items){const w=x.plannedWeight??x.weight??0;if(x[field]!=null&&w>0){total+=Number(x[field])*w/100;weight+=w}}return weight?total/weight*100:null};let r=assess({carbs:totalWeight?plannedCarbs/totalWeight*100:null,sugars:avg("sugars"),sat:avg("sat"),fiber:avg("fiber"),salt:avg("salt")},100);return {id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),name:$("mealName").value.trim()||"Γεύμα",date:new Date().toLocaleString("el-GR"),preGlucose:num("preGlucose"),preTime:$("preTime").value,trend:$("trend").value,items,estimatedWeight:totalWeight||null,method:$("method").value,recipeItems:recipeItems.map(x=>({...x,weight:recipeWeight(x)})),recipeTotalPortions:totalPortions,recipeConsumedPortions:consumedPortions,consumedMealWeight:num("actualMealWeight"),photos:[],rapidDose:num("rapidDose"),rapidTime:$("rapidTime").value,plannedCarbs:plannedCount===items.length?plannedCarbs:null,consumedCarbs:consumedCount===items.length?consumedCarbs:null,totalCarbs:plannedCount===items.length?plannedCarbs:null,carbDataCount:plannedCount,consumedCarbDataCount:consumedCount,score:plannedCount===items.length&&items.length>0?r.score:null,impact:{diabetes:r.diabetesScore,triglycerides:r.triglyceridesScore,cholesterol:r.cholesterolScore,sugars:sugarCount? (plannedSugars<=5?5:plannedSugars<=10?25:plannedSugars<=15?45:plannedSugars<=20?65:plannedSugars<=30?85:100):null},post:[]}}
 function mealScoreLabel(m){return m.score==null?"Δεν υπολογίστηκε — ανεπαρκή διατροφικά στοιχεία":`${m.score}/100`}
 function mealDetailsHTML(m){const items=Array.isArray(m.items)?m.items:[];return `<div class="meal-details"><h3>Αναλυτική σύνθεση γεύματος</h3>${items.length?items.map((x,i)=>`<div class="item"><b>${i+1}. ${esc(x.name||"Τρόφιμο χωρίς ονομασία")}</b> <span class="pill">${esc(x.type||"Χωρίς κατηγορία")}</span><p>Προγραμματισμένη ποσότητα: ${x.plannedWeight??x.weight??"—"} g · Πραγματικά καταναλωμένη: ${x.consumedWeight??"Δεν καταγράφηκε"} g</p><p>Σκεύος: ${esc(x.vessel||"Δεν καταγράφηκε")} · Διάμετρος: ${x.vesselDiameter!=null?esc(x.vesselDiameter)+" cm":"Δεν καταγράφηκε"}</p><p class="muted">Ανά 100 g: Υδατάνθρακες ${x.carbs??"—"} g · Σάκχαρα ${x.sugars??"—"} g · Κορεσμένα ${x.sat??"—"} g · Ίνες ${x.fiber??"—"} g · Αλάτι ${x.salt??"—"} g</p></div>`).join(""):`<p>Δεν υπάρχουν αποθηκευμένα επιμέρους τρόφιμα.</p>`}<h3>Στοιχεία γεύματος</h3><p>Τρόπος παρασκευής / πρόσθετα υλικά: ${esc(m.method||"Δεν καταγράφηκαν")}</p><p>Σάκχαρο πριν: ${m.preGlucose??"—"} mg/dL · Ώρα: ${esc(m.preTime||"—")} · Τάση CGM: ${esc(m.trend||"Δεν καταγράφηκε")}</p><p>Ταχεία ινσουλίνη που καταγράφηκε: ${m.rapidDose??"—"} μονάδες · Ώρα: ${esc(m.rapidTime||"—")}</p><p>Προγραμματισμένοι υδατάνθρακες: ${m.plannedCarbs==null?"Ανεπαρκή στοιχεία":m.plannedCarbs.toFixed(1)+" g"} · Καταναλωμένοι: ${m.consumedCarbs==null?"Δεν καταγράφηκαν πλήρως":m.consumedCarbs.toFixed(1)+" g"}</p><p>Βαθμολογία: ${mealScoreLabel(m)}</p>${m.post?.length?`<p>Μεταγευματικές μετρήσεις: ${m.post.map(p=>`+${p.after} ώρα: ${p.glucose} mg/dL`).join(" · ")}</p>`:""}</div>`}
 function mealHTML(m){let planned=m.plannedCarbs==null?"ελλιπή στοιχεία":m.plannedCarbs.toFixed(1)+" g",consumed=m.consumedCarbs==null?"δεν καταγράφηκε πλήρως":m.consumedCarbs.toFixed(1)+" g";return `<div class="result"><div class="score">${mealScoreLabel(m)}</div><b>${esc(m.name)}</b>${m.impact?`<h3>Ενδείξεις επιβάρυνσης γεύματος</h3>${barHTML("Διαβήτης",m.impact.diabetes,"Με βάση τους υπολογισμένους υδατάνθρακες του γεύματος.")}${barHTML("Τριγλυκερίδια",m.impact.triglycerides,"Με βάση τους διαθέσιμους υδατάνθρακες και τα σάκχαρα.")}${barHTML("Χοληστερίνη",m.impact.cholesterol,"Με βάση τα διαθέσιμα κορεσμένα λιπαρά.")}${barHTML("Σάκχαρα",m.impact.sugars,"Με βάση τα συνολικά γραμμάρια σακχάρων των προγραμματισμένων ποσοτήτων.")}`:""}<p>Προγραμματισμένοι υδατάνθρακες: ${planned}. Υδατάνθρακες από την καταναλωμένη ποσότητα: ${consumed}.</p><p>Σάκχαρο πριν: ${m.preGlucose??"—"} mg/dL (${esc(m.preTime||"χωρίς ώρα")}) · Ταχεία ινσουλίνη που καταγράφηκε: ${m.rapidDose??"—"} μονάδες (${esc(m.rapidTime||"χωρίς ώρα")}).</p><p>Συνολικό προγραμματισμένο βάρος τροφίμων: ${m.estimatedWeight??"—"} g</p><p class="muted">Η βαθμολογία είναι ενδεικτική και δεν αποτελεί ιατρική αξιολόγηση ή πρόβλεψη γλυκόζης.</p></div>`}
@@ -340,15 +374,16 @@ async function saveJournal(m){journal.unshift(m);const ok=await save();drawJourn
 $("analyzeMeal").onclick=async()=>{if(!mealItems.length){alert("Πρόσθεσε τουλάχιστον ένα τρόφιμο.");return}let m=mealPayload();lastMealResult=m;$("mealResult").innerHTML=mealHTML(m);await saveJournal(m)};
 $("saveMealTemplate").onclick=()=>{if(!mealItems.length){alert("Πρόσθεσε πρώτα τα τρόφιμα του γεύματος.");return}let m=mealPayload();mealLibrary.unshift({...m,id:"lib-"+m.id});save();drawLibrary();alert("Το γεύμα αποθηκεύτηκε στη βιβλιοθήκη.")};
 function resetMealForm(){
- const ids=["mealName","preGlucose","preTime","method","rapidDose","rapidTime","foodItemName","itemWeight","itemConsumedWeight","itemVesselDiameter","itemCarbs","itemSugars","itemSat","itemFiber","itemSalt"];
+ const ids=["mealName","preGlucose","preTime","method","rapidDose","rapidTime","foodItemName","itemWeight","itemConsumedWeight","itemVesselDiameter","itemCarbs","itemSugars","itemSat","itemFiber","itemSalt","recipeName","recipeQty","recipeEnergy","recipeCarbs","recipeSugars","recipeFat","recipeSat","recipeFiber","recipeSalt","recipeProtein","recipeTrans","actualMealWeight"];
  ids.forEach(id=>{const el=$(id);if(el)el.value=""});
  $("itemVessel").value="";
  $("foodItemType").selectedIndex=0;
  $("trend").value="";
- mealItems=[];
+ mealItems=[];recipeItems=[];
+ $("recipeTotalPortions").value="1";$("recipeConsumedPortions").value="1";
  lastMealResult=null;
  $("mealResult").innerHTML="";
- drawFoodSuggestions();clearFoodNutrition();drawMealItems();
+ drawFoodSuggestions();clearFoodNutrition();drawMealItems();drawRecipeItems();
  $("mealName").focus();
 }
 $("newMeal").onclick=()=>{
@@ -404,6 +439,6 @@ async function startApp(){
   if(hasLegacyPhotos)await save(); // Μεταφέρει αυτόματα τις παλιές φωτογραφίες στο IndexedDB.
  }
  catch(error){console.error("FoodCheck photo restore:",error);alert("Κάποιες παλιές φωτογραφίες δεν ήταν δυνατό να φορτωθούν. Μην διαγράψεις τα δεδομένα του browser.");}
- drawProductLists();drawFoodSuggestions();drawMealItems();drawLibrary();drawJournal();
+ drawProductLists();drawFoodSuggestions();drawMealItems();drawRecipeItems();drawLibrary();drawJournal();
 }
 startApp();
