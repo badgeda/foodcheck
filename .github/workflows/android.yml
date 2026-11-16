@@ -70,19 +70,19 @@ jobs:
           s = p.read_text()
           if "signingConfigs" in s:
               raise SystemExit("Signing config already exists; refusing to patch unexpectedly")
-          pattern = r"(    )buildTypes\\s*\\{\\s*release\\s*\\{"
+          pattern = r"    buildTypes\s*\{\s*release\s*\{"
           replacement = """    signingConfigs {
-                  release {
-                      storeFile file(System.getenv("FOODCHECK_KEYSTORE_PATH"))
-                      storePassword System.getenv("FOODCHECK_RELEASE_STORE_PASSWORD")
-                      keyAlias System.getenv("FOODCHECK_RELEASE_KEY_ALIAS")
-                      keyPassword System.getenv("FOODCHECK_RELEASE_STORE_PASSWORD")
-                  }
-              }
+        release {
+            storeFile file(System.getenv("FOODCHECK_KEYSTORE_PATH"))
+            storePassword System.getenv("FOODCHECK_RELEASE_STORE_PASSWORD")
+            keyAlias System.getenv("FOODCHECK_RELEASE_KEY_ALIAS")
+            keyPassword System.getenv("FOODCHECK_RELEASE_STORE_PASSWORD")
+        }
+    }
 
-              buildTypes {
-                  release {
-                      signingConfig signingConfigs.release"""
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release"""
           s2, n = re.subn(pattern, replacement, s, count=1)
           if n != 1:
               raise SystemExit("Could not locate standard Android release buildType")
