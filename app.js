@@ -70,47 +70,102 @@ function checkProductValues(p){
  return warnings;
 }
 function assess(p,portion=100){
+ const warnings=checkProductValues(p);
+ const data={...p};
+ Object.keys(warnings).forEach(field=>{data[field]=null});
+
  const valid=v=>v!=null&&Number.isFinite(Number(v))&&Number(v)>=0;
- const per=(v)=>valid(v)?Number(v)*portion/100:null;
- const carbs=per(p.carbs), sugars=per(p.sugars), sat=per(p.sat), trans=per(p.trans);
+ const per=v=>valid(v)?Number(v)*portion/100:null;
+ const carbs=per(data.carbs),sugars=per(data.sugars);
+ const sat=per(data.sat),trans=per(data.trans);
  const notes=[];
- // Τρεις ανεξάρτητες ενδείξεις επιβάρυνσης (0=πράσινο, 100=κόκκινο).
  const clamp=n=>Math.max(0,Math.min(100,Math.round(n)));
- const band=(n)=>n<=33?'Χαμηλή':n<=66?'Μέτρια':'Υψηλή';
- const diabetes=carbs==null?null:clamp(carbs<=5?5:carbs<=10?15:carbs<=15?28:carbs<=20?42:carbs<=30?60:carbs<=45?80:95);
- // Τα σάκχαρα συμμετέχουν εδώ ως μέρος της συνολικής ποσότητας, όχι ως δεύτερη ποινή.
+
+ const diabetes=carbs==null?null:clamp(
+  carbs<=5?5:carbs<=10?15:carbs<=15?28:carbs<=20?42:carbs<=30?60:carbs<=45?80:95
+ );
+
  let triglycerides=null;
- if(carbs!=null){let t=carbs<=10?8:carbs<=20?22:carbs<=30?40:carbs<=45?60:82;
-  if(valid(sugars))t+=Math.min(18,sugars*0.9);
-  if(Number(p.novaGroup)>=3)t+=8;
+ if(carbs!=null){
+  let t=carbs<=10?8:carbs<=20?22:carbs<=30?40:carbs<=45?60:82;
+  if(sugars!=null)t+=Math.min(18,sugars*0.9);
+  if(Number(data.novaGroup)>=3)t+=8;
   triglycerides=clamp(t);
  }
- const cholesterol=sat==null?null:clamp(sat<=1?5:sat<=2?18:sat<=3?32:sat<=5?52:sat<=7?72:90);
- if(diabetes!=null&&diabetes>=67)notes.push('Αυξημένοι συνολικοί υδατάνθρακες στη μερίδα.');
- if(triglycerides!=null&&triglycerides>=67)notes.push('Αυξημένη επιβάρυνση από υδατάνθρακες/σάκχαρα στη μερίδα.');
- if(cholesterol!=null&&cholesterol>=67)notes.push('Υψηλή ποσότητα κορεσμένων λιπαρών στη μερίδα.');
- if(valid(p.fiber)&&per(p.fiber)>=3)notes.push('Οι φυτικές ίνες είναι θετικό στοιχείο, αλλά δεν αφαιρούν τεχνητά την επιβάρυνση.');
- if(valid(p.protein)&&per(p.protein)>=10)notes.push('Καλή ποσότητα πρωτεΐνης στη μερίδα.');
- if(valid(p.salt)&&p.salt>1.5)notes.push('Υψηλή περιεκτικότητα σε αλάτι ανά 100 g.');
- // Ποιότητα προϊόντος: ξεχωριστή από τις τρεις μπάρες. Δεν δίνεται bonus για θρεπτικά.
- // NOVA και σαφώς δηλωμένα ανεπιθύμητα συστατικά επιφέρουν περιορισμένες αφαιρέσεις.
- let quality=100, qualityReasons=[];
- const nova=Number(p.novaGroup);
- if(nova===4){quality-=15;qualityReasons.push('NOVA 4: υπερεπεξεργασμένο προϊόν (ενδεικτική αφαίρεση 15 μονάδων).')}
- else if(nova===3){quality-=6;qualityReasons.push('NOVA 3: επεξεργασμένο προϊόν (ενδεικτική αφαίρεση 6 μονάδων).')}
- const ing=String(p.ingredients||'').toLocaleLowerCase('el');
- const explicitTrans=valid(p.trans)&&Number(p.trans)>0 || /μερικώς υδρογονωμέν|partially hydrogenated|trans\s*fat/.test(ing);
- if(explicitTrans){quality-=20;qualityReasons.push('Εντοπίστηκαν trans λιπαρά ή μερικώς υδρογονωμένα λιπαρά.')}
- if(/σιρόπι γλυκόζης|σιρόπι φρουκτόζης|glucose syrup|fructose syrup/.test(ing)){quality-=5;qualityReasons.push('Περιλαμβάνει σιρόπι πρόσθετων σακχάρων.')}
+
+ let cholesterol=null;
+ if(sat!=null||trans!=null){
+  const s=sat==null?0:sat;
+  const t=trans==null?0:trans;
+  const base=s<=1?5:s<=2?18:s<=3?32:s<=5?52:s<=7?72:90;
+  cholesterol=clamp(base+(t>0?Math.min(25,t*100):0));
+ }
+
+ if(diabetes!=null&&diabetes>=67)
+  notes.push("Αυξημένοι συνολικοί υδατάνθρακες στη μερίδα.");
+ if(triglycerides!=null&&triglycerides>=67)
+  notes.push("Αυξημένη επιβάρυνση από υδατάνθρακες/σάκχαρα στη μερίδα.");
+ if(cholesterol!=null&&cholesterol>=67)
+  notes.push("Υψηλή επιβάρυνση από κορεσμένα ή/και trans λιπαρά.");
+ if(valid(data.fiber)&&per(data.fiber)>=3)
+  notes.push("Οι φυτικές ίνες είναι θετικό στοιχείο, αλλά δεν αφαιρούν τεχνητά την επιβάρυνση.");
+ if(valid(data.protein)&&per(data.protein)>=10)
+  notes.push("Καλή ποσότητα πρωτεΐνης στη μερίδα.");
+ if(valid(data.salt)&&data.salt>1.5)
+  notes.push("Υψηλή περιεκτικότητα σε αλάτι ανά 100 g.");
+
+ let quality=100,qualityReasons=[];
+ const nova=Number(data.novaGroup);
+
+ if(nova===4){
+  quality-=15;
+  qualityReasons.push("NOVA 4: υπερεπεξεργασμένο προϊόν (ενδεικτική αφαίρεση 15 μονάδων).");
+ }else if(nova===3){
+  quality-=6;
+  qualityReasons.push("NOVA 3: επεξεργασμένο προϊόν (ενδεικτική αφαίρεση 6 μονάδων).");
+ }
+
+ const ing=String(data.ingredients||"").toLocaleLowerCase("el");
+ const explicitTrans=(valid(data.trans)&&Number(data.trans)>0)||
+  /μερικώς υδρογονωμέν|partially hydrogenated|trans\s*fat/.test(ing);
+
+ if(explicitTrans){
+  quality-=20;
+  qualityReasons.push("Εντοπίστηκαν trans λιπαρά ή μερικώς υδρογονωμένα λιπαρά.");
+ }
+ if(/σιρόπι γλυκόζης|σιρόπι φρουκτόζης|glucose syrup|fructose syrup/.test(ing)){
+  quality-=5;
+  qualityReasons.push("Περιλαμβάνει σιρόπι πρόσθετων σακχάρων.");
+ }
+
  quality=clamp(quality);
- // Τα ελλιπή/άγνωστα στοιχεία δεν αποτελούν από μόνα τους αρνητικό χαρακτηριστικό
- // και δεν μειώνουν τη βαθμολογία. Αφαιρούνται μονάδες μόνο για τεκμηριωμένους παράγοντες.
- const known=[p.carbs,p.sugars,p.sat,p.salt,p.fiber,p.fat,p.protein].filter(valid).length;
- const confidence=known>=6?'Καλή':known>=4?'Μέτρια':'Χαμηλή';
- const portionProtein=per(p.protein);
- if(!valid(p.carbs))notes.push('Δεν υπάρχουν στοιχεία υδατανθράκων.');
- if(!valid(p.sat))notes.push('Δεν υπάρχουν στοιχεία κορεσμένων λιπαρών.');
- return {score:quality,level:quality>=75?'risk-low':quality>=50?'risk-mid':'risk-high',confidence,notes,portionCarbs:carbs,portionProtein,known,diabetesScore:diabetes,triglyceridesScore:triglycerides,cholesterolScore:cholesterol,qualityReasons};
+
+ const known=[
+  data.carbs,data.sugars,data.sat,data.salt,
+  data.fiber,data.fat,data.protein,data.trans
+ ].filter(valid).length;
+
+ const confidence=known>=6?"Καλή":known>=4?"Μέτρια":"Χαμηλή";
+
+ if(!valid(data.carbs))notes.push("Δεν υπάρχουν αξιόπιστα στοιχεία υδατανθράκων.");
+ if(!valid(data.sat)&&!valid(data.trans))
+  notes.push("Δεν υπάρχουν αξιόπιστα στοιχεία κορεσμένων ή trans λιπαρών.");
+
+ return {
+  score:quality,
+  level:quality>=75?"risk-low":quality>=50?"risk-mid":"risk-high",
+  confidence,notes,
+  portionCarbs:carbs,
+  portionSat:sat,
+  portionTrans:trans,
+  portionProtein:per(data.protein),
+  known,
+  diabetesScore:diabetes,
+  triglyceridesScore:triglycerides,
+  cholesterolScore:cholesterol,
+  qualityReasons,
+  warnings
+ };
 }
 function barHTML(label,value,reason){
  if(value==null)return `<div class="impact"><div class="impact-head"><b>${label}</b><span>Ανεπαρκή δεδομένα</span></div><div class="impact-track unavailable"></div><p class="muted">Δεν υπάρχουν αρκετά στοιχεία για αξιόπιστη ένδειξη.</p></div>`;
