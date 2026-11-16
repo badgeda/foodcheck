@@ -130,6 +130,11 @@ function assess(p,portion=100){
   /μερικώς υδρογονωμέν|partially hydrogenated|trans\s*fat/.test(ing);
 
 const confirmedTrans=valid(data.trans)&&Number(data.trans)>0;
+ const forbiddenReasons=[];
+if(nova===4) forbiddenReasons.push("Υπερεπεξεργασμένο προϊόν (NOVA 4).");
+if(confirmedTrans) forbiddenReasons.push("Περιέχει trans λιπαρά.");
+else if(/μερικώς υδρογονωμέν|partially hydrogenated/.test(ing))
+ forbiddenReasons.push("Περιέχει μερικώς υδρογονωμένα λιπαρά.");
 
  if(confirmedTrans){
   quality-=20;
