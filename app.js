@@ -174,6 +174,9 @@ function resultHTML(p,portion,r){
 
  return `<div class="result ${r.level}">
  <div class="scoreline"><div class="score">${scoreText}</div><div><b>${qualityLabel}</b><br><span class="pill">Ποιότητα δεδομένων: ${r.confidence}</span></div></div>
+ ${r.diabetesScore!=null&&r.diabetesScore>33?'<div style="background:#ffebee;border:2px solid #c62828;color:#b71c1c;padding:10px;margin:10px 0;border-radius:8px;font-size:18px;font-weight:900;text-align:center;">⛔ ΑΚΑΤΑΛΛΗΛΟ ΓΙΑ ΔΙΑΒΗΤΙΚΟΥΣ</div>':""}
+ ${r.cholesterolScore!=null&&r.cholesterolScore>33?'<div style="background:#fff8e1;border:2px solid #e5ad27;color:#805600;padding:10px;margin:10px 0;border-radius:8px;font-size:17px;font-weight:900;text-align:center;">⚠️ ΚΙΝΔΥΝΟΣ ΑΥΞΗΣΗΣ ΧΟΛΗΣΤΕΡΙΝΗΣ</div>':""}
+ ${r.triglyceridesScore!=null&&r.triglyceridesScore>33?'<div style="background:#fff8e1;border:2px solid #e5ad27;color:#805600;padding:10px;margin:10px 0;border-radius:8px;font-size:17px;font-weight:900;text-align:center;">⚠️ ΚΙΝΔΥΝΟΣ ΑΥΞΗΣΗΣ ΤΡΙΓΛΥΚΕΡΙΔΙΩΝ</div>':""}
  ${r.forbiddenReasons?.length?'<div style="background:#ffebee;border:2px solid #c62828;color:#b71c1c;padding:12px;margin:12px 0;border-radius:8px;font-size:20px;font-weight:900;text-align:center;">⛔ ΑΚΑΤΑΛΛΗΛΟ ΠΡΟΣ ΚΑΤΑΝΑΛΩΣΗ</div><ul style="color:#b71c1c;font-weight:700;">'+r.forbiddenReasons.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ul>":""}
  <b>${esc(p.name||"Τρόφιμο")}</b>
  <h3>Γενική διατροφική ποιότητα</h3>
