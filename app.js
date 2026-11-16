@@ -174,7 +174,8 @@ else if(/μερικώς υδρογονωμέν|partially hydrogenated/.test(ing)
   triglyceridesScore:triglycerides,
   cholesterolScore:cholesterol,
   qualityReasons,
-  warnings
+forbiddenReasons,
+warnings
  };
 }
 function barHTML(label,value,reason){
