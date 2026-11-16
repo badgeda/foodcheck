@@ -442,9 +442,7 @@ function mealPayload(){
  }
  let plannedCarbs=null,consumedCarbs=null,impact={diabetes:null,triglycerides:null,cholesterol:null,sugars:null},score=null;
  if(isUnknown&&profile&&portionWeight){
-  const n=profile.nutrition,carbs=n.carbs*portionWeight/100,sugars=n.sugars*portionWeight/100,sat=n.sat*portionWeight/100,fat=n.fat*portionWeight/100;
-  plannedCarbs=carbs;consumedCarbs=carbs;
-  impact={diabetes:Math.min(100,Math.round(carbs*2.5)),triglycerides:Math.min(100,Math.round((carbs+sugars)*2)),cholesterol:Math.min(100,Math.round(sat*12)),sugars:Math.min(100,Math.round(sugars*5))};
+  const n=profile.nutrition,carbs=n.carbs*portionWeight/100;\n  plannedCarbs=carbs;consumedCarbs=carbs;\n  // Δεν αποδίδεται αριθμητικός δείκτης κινδύνου από μη εξακριβωμένη σύνθεση.
  }
  return {id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),name:$("mealName").value.trim()||"Γεύμα",date:new Date().toLocaleString("el-GR"),mode:mealMode,preGlucose:num("preGlucose"),preTime:$("preTime").value,trend:$("trend").value,items,estimatedWeight:isUnknown?portionWeight:items.reduce((a,x)=>a+(recipeWeight(x)||0),0)||null,method:isUnknown?$("unknownNotes").value:$("method").value,recipeItems:isUnknown?[]:recipeItems.map(x=>({...x,weight:recipeWeight(x)})),recipeNutrition,recipeTotalPortions:totalPortions,recipeConsumedPortions:consumedPortions,consumedMealWeight:isUnknown?portionWeight:num("actualMealWeight"),unknownIngredients:isUnknown?[...unknownIngredients]:[],unknownVessel:isUnknown?$("unknownVessel").value:"",unknownProfile:profile?.label||null,estimateType:isUnknown?(profile?"τυπικό προφίλ – προσεγγιστική εκτίμηση":"ανεπαρκή στοιχεία"): "υπολογισμός από υλικά συνταγής",photos:[],rapidDose:num("rapidDose"),rapidTime:$("rapidTime").value,plannedCarbs,consumedCarbs,totalCarbs:plannedCarbs,carbDataCount:plannedCarbs==null?0:1,consumedCarbDataCount:consumedCarbs==null?0:1,score,impact,post:[]};
 }
