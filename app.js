@@ -131,10 +131,13 @@ function assess(p,portion=100){
 
 const confirmedTrans=valid(data.trans)&&Number(data.trans)>0;
 
- if(explicitTrans){
+ if(confirmedTrans){
   quality-=20;
-  qualityReasons.push("Εντοπίστηκαν trans λιπαρά ή μερικώς υδρογονωμένα λιπαρά.");
- }
+  qualityReasons.push("Εντοπίστηκαν trans λιπαρά.");
+}else if(/μερικώς υδρογονωμέν|partially hydrogenated/.test(ing)){
+  quality-=20;
+  qualityReasons.push("Εντοπίστηκαν μερικώς υδρογονωμένα λιπαρά στα συστατικά.");
+}
  if(/σιρόπι γλυκόζης|σιρόπι φρουκτόζης|glucose syrup|fructose syrup/.test(ing)){
   quality-=5;
   qualityReasons.push("Περιλαμβάνει σιρόπι πρόσθετων σακχάρων.");
